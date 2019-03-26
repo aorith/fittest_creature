@@ -25,7 +25,7 @@ CSV_NAME = str(int(time())) + "_data_v2.csv"
 # only the creature with the record age will breed, even if it died already
 ONLY_RECORD_BREEDS = True
 
-TOTAL_CREATURES = 12
+TOTAL_CREATURES = 10
 MIN_CREATURE_SIZE = 7
 MAX_CREATURE_SIZE = 53
 
@@ -49,14 +49,14 @@ BREEDING_AGE = 50  # seconds the creature needs to live before it can breed
 # biggest gaps make it look ugly and unreal...
 DISTANCE_BETWEEN_SPRITES = (MAX_CREATURE_SIZE // 2) + 1
 
-TOTAL_POISON = 180
-TOTAL_FOOD = 199
+TOTAL_POISON = 69
+TOTAL_FOOD = 62
 HEALTH_DEGENERATION = 9.1  # creatures will lose hp per second
-POISON_VALUE = -67  # negative value as poison is bad!
-FOOD_VALUE = 21.1
+POISON_VALUE = -99  # negative value as poison is bad!
+FOOD_VALUE = 20
 
 # Values that will vary according to DNA changes, but have a max value
-MAX_PERCEPTION_DIST = 200  # max dist at which creatures can evolve to see food & poison
+MAX_PERCEPTION_DIST = 300  # max dist at which creatures can evolve to see food & poison
 # Creatures have a constraint, they evolve choosing between maxvel and maxhealth
 # having more maxhealth means bigger size and less maxvel
 TOTAL_MAXVEL_MAXHP_POINTS = 220
@@ -463,7 +463,7 @@ class Game:
         if not self.all_creatures:
             loops = TOTAL_CREATURES
 
-        if (random() < NEW_CREATURE_CHANCE or not self.all_creatures):
+        if random() < NEW_CREATURE_CHANCE or not self.all_creatures:
             if len(self.all_creatures) < TOTAL_CREATURES:
                 for _ in range(loops):
                     newpos = vec(randint(0, WIN_WIDTH),
@@ -509,6 +509,13 @@ class Game:
                 self.food_group.add(f)
                 self.all_sprites.add(f)
 
+    def append_to_hist(self, creature):
+        row = []
+        row.append(int(creature.age))
+        for i in range(DNA_SIZE):
+            row.append(creature.dna[i])
+        self.history.append(row)
+
     def game_loop(self):
         while self.running:
             # get delta time in seconds (default is miliseconds)
@@ -523,13 +530,10 @@ class Game:
             self.key_events()
 
             self.all_creatures.update(dt, self.all_foods)
+            # check if any creature died
             for creature in self.all_creatures:
                 if creature.is_dead():
-                    row = []
-                    row.append(int(creature.age))
-                    for i in range(DNA_SIZE):
-                        row.append(creature.dna[i])
-                    self.history.append(row)
+                    self.append_to_hist(creature)
                     creature.kill()
                     del creature
 
@@ -557,8 +561,9 @@ class Game:
                     f"(Record: {int(self.age_record)} secons) " +
                     f"(Only record breeds: {str(self.only_record_breeds)}) {csv_out}")
 
+            # save to csv every X secs
             if self.save_to_csv:
-                if (pg.time.get_ticks() // 1000) % 20:
+                if not (pg.time.get_ticks() // 1000) % 20:
                     with open(CSV_NAME, mode='a', newline='') as data_file:
                         data_writer = csv.writer(
                             data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
