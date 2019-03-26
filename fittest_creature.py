@@ -13,28 +13,34 @@ os.chdir(os.path.abspath(os.path.dirname(__file__)))
 ### CONFIGURATION ###
 WIN_WIDTH = 1280
 WIN_HEIGHT = 800
-FPS = 60
+FPS = 30
 BACKGROUND_COLOR = (7, 7, 7)
 FOOD_COLOR = (50, 50, 255)
 POISON_COLOR = (255, 50, 50)
 
-SAVE_TO_CSV = True
-CSV_NAME = str(int(time())) + "_data.csv"
+SAVE_TO_CSV = False
+CSV_NAME = str(int(time())) + "_data_v2.csv"
 
-TOTAL_CREATURES = 16
+# Switches how we choose the creatures that breed, with this
+ONLY_RECORD_BREEDS = True
+# only the creature with the record age will breed, even if it died already
+
+TOTAL_CREATURES = 12
 MIN_CREATURE_SIZE = 7
 MAX_CREATURE_SIZE = 53
 
 # chance to spawn a new creature to add variation to the simulation
 # if this fails an existing creature will try to breed
 # keep it low to favor breeding and let the genetic algorithm work
-# if there are none creatures in the world the spawn_creatures function will spawn one
+# if there are none creatures in the world the spawn_creatures function will spawn em
 NEW_CREATURE_CHANCE = 0.004
 
-DNA_SIZE = 5  # number of values in the dna
-MUTATE_CHANCE = 0.1
-INITIAL_MUTATE_VALUE = 0.1  # the more age a creature has, the lower this value will be
-BREEDING_WAIT = 15 * 1000  # in milliseconds
+DNA_SIZE = 5  # number of values in the dna, don't edit
+# both mutation variables below decrease with age:
+MUTATION_CHANCE = 0.1  # chance to mutate each property
+MUTATION_VALUE = 0.1  # how much a property will change when mutated
+
+BREEDING_WAIT = 15 * 1000  # in milliseconds, wait time to breed again
 BREEDING_AGE = 50  # seconds the creature needs to live before it can breed
 
 # this should avoid that a new creature spawns directly eating poison or food
@@ -43,11 +49,11 @@ BREEDING_AGE = 50  # seconds the creature needs to live before it can breed
 # biggest gaps make it look ugly and unreal...
 DISTANCE_BETWEEN_SPRITES = (MAX_CREATURE_SIZE // 2) + 1
 
-TOTAL_POISON = 249
-TOTAL_FOOD = 119
-HEALTH_DEGENERATION = 11.1  # creatures will lose hp per second
-POISON_VALUE = -41  # negative value as poison is bad!
-FOOD_VALUE = 21
+TOTAL_POISON = 180
+TOTAL_FOOD = 199
+HEALTH_DEGENERATION = 9.1  # creatures will lose hp per second
+POISON_VALUE = -67  # negative value as poison is bad!
+FOOD_VALUE = 21.1
 
 # Values that will vary according to DNA changes, but have a max value
 MAX_PERCEPTION_DIST = 200  # max dist at which creatures can evolve to see food & poison
@@ -67,14 +73,12 @@ WANDER_RING_WAIT = 2000
 
 
 def translate(value, left_min, left_max, right_min, right_max):
-    """ returns scaled value with a range of left values to a range of right values """
+    """ returns scaled value from the ranges of the left to right """
     # Figure out how 'wide' each range is
     left_span = left_max - left_min
     right_span = right_max - right_min
-
     # Convert the left range into a 0-1 range (float)
     value_scaled = float(value - left_min) / float(left_span)
-
     # Convert the 0-1 range into a value in the right range.
     return right_min + (value_scaled * right_span)
 
@@ -119,10 +123,8 @@ class Creature(pg.sprite.Sprite):
         self.orig_image = self.image
         self.rect = self.image.get_rect(center=pos)
 
-        # this is for drawing something similar to a head
-        self.head_rect = (self.size - (self.radius // 2),
-                          ((self.radius + 1) // 2),
-                          self.radius, self.radius)
+        # this is for drawing something similar eyes
+        self.eye_radius = self.radius // 3
 
         self.color = pg.Color('green')
         self.pos = pos
@@ -142,10 +144,10 @@ class Creature(pg.sprite.Sprite):
 
     def mutate(self, dna):
         """ returns a mutated (or not) copy of its own dna """
-        mutate_range = INITIAL_MUTATE_VALUE / \
+        mutate_range = MUTATION_VALUE / \
             (self.age / 60)  # the longer it has been alive, the less it mutates
         for i in range(DNA_SIZE):
-            if random() < MUTATE_CHANCE:
+            if random() < MUTATION_CHANCE:
                 print(
                     f"[{pg.time.get_ticks()}] [{id(self)}] mutating {i}: {dna[i]} --> ", end="")
                 offset = translate(random(), 0, 1, -mutate_range, mutate_range)
@@ -173,19 +175,6 @@ class Creature(pg.sprite.Sprite):
         if steer.length() > self.max_steer_force:
             steer.scale_to_length(self.max_steer_force)
         return steer
-
-    """ Turned off
-    def screen_edges(self):
-        if self.pos.x + self.radius > WIN_WIDTH:
-            self.acc.x = -abs(self.max_vel)
-        elif self.pos.x < self.radius:
-            self.acc.x = abs(self.max_vel)
-
-        if self.pos.y + self.radius > WIN_HEIGHT:
-            self.acc.y = -abs(self.max_vel)
-        elif self.pos.y < self.radius:
-            self.acc.y = abs(self.max_vel)
-        """
 
     def wander_by_ring(self):
         now = pg.time.get_ticks()
@@ -224,14 +213,12 @@ class Creature(pg.sprite.Sprite):
                 check_dist = self.food_dist
                 attraction = self.food_attraction
 
-            if d < check_dist:
-
+            if d <= check_dist:
                 if d < record_min_dist:
                     record_min_dist = d
                     record_food = f
-
-                d_diff = translate(d, check_dist, 0, 0, attraction)
-
+                # apply more force the closest it is to the target
+                d_diff = translate(d, int(check_dist * 1.20), 0, 0, attraction)
                 steer += self.seek(f.pos) * d_diff
 
         # apply some more force to the closest target, (avoids stucks)
@@ -245,7 +232,7 @@ class Creature(pg.sprite.Sprite):
         if steer.length() > self.max_steer_force:
             steer.scale_to_length(self.max_steer_force)
 
-        if steer.length() > 0.2:  # 0.2 to avoid getting stuck between opposite forces
+        if steer.length() > 0.4:  # 0.4 to avoid getting stuck between opposite forces
             # now we apply all the calculated steer force
             self.apply_force(steer)
         else:
@@ -261,14 +248,8 @@ class Creature(pg.sprite.Sprite):
             self.health += FOOD_VALUE
         self.health = max(0, min(self.health, self.max_health))
 
-    def update(self, dt, foods):
+    def update(self, dt, foods, save_to_csv):
         self.seek_food(foods)
-        # self.apply_force(self.seek(pygame.mouse.get_pos()))
-
-        """ Turned off
-        # check if we are out of bounds
-        self.screen_edges()
-        """
 
         self.vel += self.acc
         if self.vel.length() > self.max_vel:
@@ -284,7 +265,7 @@ class Creature(pg.sprite.Sprite):
 
         # we ded?
         if self.health <= 0:
-            if SAVE_TO_CSV:
+            if save_to_csv:
                 with open(CSV_NAME, mode='a', newline='') as data_file:
                     data_writer = csv.writer(
                         data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -300,11 +281,14 @@ class Creature(pg.sprite.Sprite):
         green = translate(self.health, 0, self.max_health, 0, 255)
         green = max(0, min(green, 255))
         red = 255 - green
-        self.color = (red, green, 25)
+        self.color = (red, green, 35)
 
         pg.gfxdraw.filled_circle(self.orig_image, self.radius, self.radius, self.radius,
                                  self.color)
-        pg.draw.rect(self.orig_image, self.color, self.head_rect)
+        pg.gfxdraw.filled_circle(self.orig_image, self.size - self.eye_radius,
+                                 abs(self.radius - self.eye_radius - 2), abs(self.eye_radius - 2), (red, red, green))
+        pg.gfxdraw.filled_circle(self.orig_image, self.size - self.eye_radius,
+                                 self.radius + self.eye_radius + 2, abs(self.eye_radius - 2), (red, red, green))
 
         # rotate image
         direction = self.vel  # where the creature is going
@@ -361,7 +345,6 @@ class Food(pg.sprite.Sprite):
 def valid_pos(newpos, sprites):
     """ checks if given position respects given distance between sprites """
     mindist = DISTANCE_BETWEEN_SPRITES
-
     valid = True
     for s in sprites:
         if (newpos - s.pos).length() < mindist:
@@ -383,58 +366,6 @@ def process_collisions(group1, group2):
                 del food  # delete instanciated object
 
 
-def spawn_creatures(all_creatures, all_sprites, sprites_to_check_pos):
-    # spawn a new creature or try to breed existing one
-    # we always try to spawn a full set of creatures if there are 0
-    total = 1
-    if not all_creatures:
-        total = TOTAL_CREATURES
-
-    if random() < NEW_CREATURE_CHANCE or not all_creatures:
-        if len(all_creatures) < TOTAL_CREATURES:
-            for _ in range(total):
-                newpos = vec(randint(0, WIN_WIDTH), randint(0, WIN_HEIGHT))
-                if valid_pos(newpos, sprites_to_check_pos):
-                    newcreature = Creature(newpos)
-                    all_creatures.add(newcreature)
-                    all_sprites.add(newcreature)
-    else:
-        # we can breed if all_creatures is not empty and we still have room
-        if len(all_creatures) < TOTAL_CREATURES and all_creatures:
-            # we pick one random sprite as a parent and try to breed it
-            parent = choice(all_creatures.sprites())
-            dna = parent.breed()
-            if dna is not None:
-                # breed was successful, lets see if it's lucky to find a valid position to spawn
-                newpos = vec(randint(0, WIN_WIDTH), randint(0, WIN_HEIGHT))
-                if valid_pos(newpos, sprites_to_check_pos):
-                    # we got a valid position, create a new creature there with dna as heritage
-                    child = Creature(newpos, dna)
-                    all_creatures.add(child)
-                    all_sprites.add(child)
-                    parent.childs += 1  # the parent, augments its childs counter
-                    child.gen += 1 + parent.gen  # update the childs generation by 1 + parents gen
-
-
-def spawn_foods(all_sprites, all_foods, food_group, poison_group):
-    # spawn poison
-    if len(poison_group) < TOTAL_POISON:
-        newpos = vec(randint(0, WIN_WIDTH), randint(0, WIN_HEIGHT))
-        if valid_pos(newpos, all_sprites):
-            f = Food(newpos, 5, True)
-            all_foods.add(f)
-            poison_group.add(f)
-            all_sprites.add(f)
-    # spawn food
-    if len(food_group) < TOTAL_FOOD:
-        newpos = vec(randint(0, WIN_WIDTH), randint(0, WIN_HEIGHT))
-        if valid_pos(newpos, all_sprites):
-            f = Food(newpos, 5, False)
-            all_foods.add(f)
-            food_group.add(f)
-            all_sprites.add(f)
-
-
 def print_info(v):
     print(f"\n[{pg.time.get_ticks()}] [{id(v)}]\n" +
           f"currHP: {v.health}, Gen: {v.gen}, Childs: {v.childs}, Age: {v.age} seconds.\n" +
@@ -452,6 +383,8 @@ class Game:
         self.running = True
 
         self.draw_vectors = False
+        self.only_record_breeds = ONLY_RECORD_BREEDS
+        self.save_to_csv = SAVE_TO_CSV
 
         # record creature tracking
         self.record = None
@@ -476,6 +409,10 @@ class Game:
                     self.running = False
                 elif event.key == pg.K_v:
                     self.draw_vectors = not self.draw_vectors
+                elif event.key == pg.K_r:
+                    self.only_record_breeds = not self.only_record_breeds
+                elif event.key == pg.K_s:
+                    self.save_to_csv = not self.save_to_csv
                 elif event.key == pg.K_p:
                     print(
                         f"\n[{pg.time.get_ticks()}] [total creatures: {len(self.all_creatures)}]\n")
@@ -521,22 +458,73 @@ class Game:
                                      int(current_record.pos.y),
                                      current_record.radius // 4, pg.Color('black'))
 
+    def spawn_creatures(self):
+        # spawn a new creature or try to breed existing one
+        # we always try to spawn a full set of creatures if there are 0
+        loops = 1
+        if not self.all_creatures:
+            loops = TOTAL_CREATURES
+
+        if (random() < NEW_CREATURE_CHANCE or not self.all_creatures):
+            if len(self.all_creatures) < TOTAL_CREATURES:
+                for _ in range(loops):
+                    newpos = vec(randint(0, WIN_WIDTH),
+                                 randint(0, WIN_HEIGHT))
+                    if valid_pos(newpos, self.poison_group):
+                        newcreature = Creature(newpos)
+                        self.all_creatures.add(newcreature)
+                        self.all_sprites.add(newcreature)
+        else:
+            # we can breed if all_creatures is not empty and we still have room
+            if len(self.all_creatures) < TOTAL_CREATURES and self.all_creatures:
+                # we pick one random sprite as a parent and try to breed it
+                parent = self.record if self.only_record_breeds else choice(
+                    self.all_creatures.sprites())
+                dna = parent.breed()
+                if dna is not None:
+                    # breed was successful, see if it's lucky to find a valid position to spawn
+                    newpos = vec(randint(0, WIN_WIDTH),
+                                 randint(0, WIN_HEIGHT))
+                    if valid_pos(newpos, self.poison_group):
+                        # got a valid position, create a new creature there with dna as heritage
+                        child = Creature(newpos, dna)
+                        self.all_creatures.add(child)
+                        self.all_sprites.add(child)
+                        parent.childs += 1  # the parent, augments its childs counter
+                        child.gen += 1 + parent.gen  # update the childs gen by 1 + parents gen
+
+    def spawn_foods(self):
+        # spawn poison
+        if len(self.poison_group) < TOTAL_POISON:
+            newpos = vec(randint(0, WIN_WIDTH), randint(0, WIN_HEIGHT))
+            if valid_pos(newpos, self.all_sprites):
+                f = Food(newpos, 5, True)
+                self.all_foods.add(f)
+                self.poison_group.add(f)
+                self.all_sprites.add(f)
+        # spawn food
+        if len(self.food_group) < TOTAL_FOOD:
+            newpos = vec(randint(0, WIN_WIDTH), randint(0, WIN_HEIGHT))
+            if valid_pos(newpos, self.all_sprites):
+                f = Food(newpos, 5, False)
+                self.all_foods.add(f)
+                self.food_group.add(f)
+                self.all_sprites.add(f)
+
     def game_loop(self):
         while self.running:
             # get delta time in seconds (default is miliseconds)
             dt = self.clock.get_time() / 1000
 
-            # spawn/breed, we pass poison group just to check that none spawns eating poison
-            spawn_creatures(self.all_creatures,
-                            self.all_sprites, self.poison_group)
+            # spawn/breed, we check poison group just to ensure that none spawns eating poison
+            self.spawn_creatures()
             # food/poison, we check all the sprites not to spawn food on top of anything
-            spawn_foods(self.all_sprites, self.all_foods,
-                        self.food_group, self.poison_group)
+            self.spawn_foods()
 
             self.events()
             self.key_events()
 
-            self.all_creatures.update(dt, self.all_foods)
+            self.all_creatures.update(dt, self.all_foods, self.save_to_csv)
             process_collisions(self.all_creatures, self.all_foods)
 
             self.screen.fill(BACKGROUND_COLOR)
@@ -552,10 +540,14 @@ class Game:
             pg.display.flip()
 
             if self.record is not None:
+                csv_out = ""
+                if self.save_to_csv:
+                    csv_out = f"(Saving csv to: {CSV_NAME})"
                 pg.display.set_caption(
-                    "Fittest Ship. (Fps: {:.2f}) ".format(self.clock.get_fps()) +
+                    "Fittest Creature. (Fps: {:.2f}) ".format(self.clock.get_fps()) +
                     f"(Running: {int(pg.time.get_ticks() / 1000)} seconds) (Alive: {len(self.all_creatures)}) " +
-                    f"(Record: {int(self.age_record)} secons, with DNA: {self.record.dna})")
+                    f"(Record: {int(self.age_record)} secons) " +
+                    f"(Only record breeds: {str(self.only_record_breeds)}) {csv_out}")
 
             # last action before repeating the loop, let the time run!
             self.clock.tick(FPS)
