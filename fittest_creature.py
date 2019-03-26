@@ -87,10 +87,6 @@ class Creature(pg.sprite.Sprite):
     def __init__(self, pos, dna=None):
         super().__init__()
 
-        # TEST
-        # dna = [0.5, 0.9, 0.03, 0.9, 0.5]
-        ####
-
         self.dna = []
         # if we don't have dna, create a random one
         if dna is None:
@@ -212,7 +208,7 @@ class Creature(pg.sprite.Sprite):
                 if dist <= self.food_dist:
                     targets_inrange[t] = dist
 
-        if len(targets_inrange):
+        if targets_inrange:
             min_dist = min(targets_inrange.values())
             for t, dist in targets_inrange.items():
                 # get the steer force for the current target
@@ -224,12 +220,12 @@ class Creature(pg.sprite.Sprite):
 
                 if t.is_poison:
                     steer_force *= self.poison_attraction * min_dist_mult
+                    # the further away the less steer force
+                    steer_force /= translate(dist, 0, self.poison_dist, 1, 100)
                 else:
                     steer_force *= self.food_attraction * min_dist_mult
-
-                # the closer, the more steer_force
-                if dist:
-                    steer_force /= dist
+                    # the further away the less steer force
+                    steer_force /= translate(dist, 0, self.food_dist, 1, 100)
 
                 # sum all the steer_force
                 steer += steer_force
