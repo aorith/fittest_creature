@@ -34,15 +34,21 @@ The creature above has some nice properties to survive, its attracted to food (p
 
 ### How does the genetic algorithm work here
 
-Basically, each creature has a variable called "age", which stores age in seconds, when a creature has more than the value defined in "BREEDING_AGE" variable, it will have a chance to breed (which is higher the more age it has).
+Basically, each creature has a variable called "age", which stores its age in seconds, when a creature has more than the value defined in "BREEDING_AGE" variable, it will have a chance to breed (which is higher the more age it has). That way we can establish that the age property will be the fitness value of this algorithm.
 
-The breed function of the creature returns a mutated version of its own DNA (there is a chance to mutate each property, and the amout it can mutate **decreases** the more age the creature has.
+
+The breed function of the creature returns a mutated version of its own DNA, there is a chance to mutate each property, and a total amout that property can mutate, both values **decrease** as the creature has more age.
+So, the more age a creature has, the less chance to mutate any property, and if it mutates, the difference in values will be lower, that way when we have a bad population (bad = age is low) creatures will mutate more.
 Then that mutated DNA is used to spawn a new creature.
+
+When we have a pool of creatures with age > BREEDING_AGE, they will try to breed randomly. We can turn on "ONLY_RECORD_BREEDS" so that only the creature that has the current all time age record can breed, even if that creature is dead, which I guess will find creatures with better fitness faster.
 
 There are a few more variables playing into this, the code has a lot of comments explaining it, and it being written in python is pretty well readable :)
 
 ### Misc
 
-- You can press **v** to turn on/off a visual representation of food/poison properties of the creatures.
-- You can press **p** to print to the console information about the current creature age record and the all time record.
-- Each time a creature dies, its age followed by its DNA will be stored in a *.csv file in the same directory as the script. It can be disabled by setting the variable SAVE_TO_CSV to False. Nice for creating charts...
+- Press **v** to turn on/off a visual representation of food/poison properties of the creatures.
+- Press **r** to turn on/off only record can breed. (current mode can be seen on status bar)
+- Press **s** to turn on/off save to csv file. (current mode can be seen on status bar).
+_(Each time a creature dies, its age followed by its DNA will be stored in a *.csv file in the same directory as the script. It can be disabled by setting the variable SAVE_TO_CSV to False. Nice for creating charts...)_
+- Press **p** to print to the console information about the current creature age record and the all time record.
