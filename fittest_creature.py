@@ -35,7 +35,7 @@ MAX_CREATURE_SIZE = 53
 # if there are none creatures in the world the spawn_creatures function will spawn em
 NEW_CREATURE_CHANCE = 0.004
 
-DNA_SIZE = 5  # number of values in the dna, don't edit
+DNA_SIZE = 6  # number of values in the dna, don't edit
 # both mutation variables below decrease with age:
 MUTATION_CHANCE = 0.1  # chance to mutate each property
 MUTATION_VALUE = 0.1  # how much a property will change when mutated
@@ -56,6 +56,7 @@ POISON_VALUE = -99  # negative value as poison is bad!
 FOOD_VALUE = 20
 
 # Values that will vary according to DNA changes, but have a max value
+MAX_STEER_FORCE = 4
 MAX_PERCEPTION_DIST = 300  # max dist at which creatures can evolve to see food & poison
 # Creatures have a constraint, they evolve choosing between maxvel and maxhealth
 # having more maxhealth means bigger size and less maxvel
@@ -117,6 +118,7 @@ class Creature(pg.sprite.Sprite):
             self.dna[3], 0, 1, self.radius, MAX_PERCEPTION_DIST)
         self.poison_dist = translate(
             self.dna[4], 0, 1, self.radius, MAX_PERCEPTION_DIST)
+        self.max_steer_force = translate(self.dna[5], 0, 1, 0, MAX_STEER_FORCE)
 
         # required to draw the creature, the variable name must be "image" for pygame sprite.
         self.image = pg.Surface((self.size, self.size), pg.SRCALPHA)
@@ -136,7 +138,6 @@ class Creature(pg.sprite.Sprite):
 
         self.last_bred_time = 0
 
-        self.max_steer_force = 3
         self.health = self.max_health
 
         self.last_target_time = 0
@@ -221,11 +222,13 @@ class Creature(pg.sprite.Sprite):
                 if t.is_poison:
                     steer_force *= self.poison_attraction * min_dist_mult
                     # the further away the less steer force
-                    steer_force /= translate(dist, 0, self.poison_dist, 1, 100)
+                    steer_force /= translate(dist, 0,
+                                             self.poison_dist, 1, MAX_PERCEPTION_DIST)
                 else:
                     steer_force *= self.food_attraction * min_dist_mult
                     # the further away the less steer force
-                    steer_force /= translate(dist, 0, self.food_dist, 1, 100)
+                    steer_force /= translate(dist, 0,
+                                             self.food_dist, 1, MAX_PERCEPTION_DIST)
 
                 # sum all the steer_force
                 steer += steer_force
@@ -364,7 +367,8 @@ def print_info(v):
           f"DNA: {v.dna}\n" +
           f"FoodAttr: {v.food_attraction}, PoisonAttr: {v.poison_attraction}\n" +
           f"FoodDist: {v.food_dist}, PoisonDist: {v.poison_dist}\n" +
-          f"MaxHealth: {v.max_health}, MaxVel: {v.max_vel}, Size: {v.size}\n")
+          f"MaxHealth: {v.max_health}, MaxVel: {v.max_vel}, Size: {v.size}, " +
+          f"MaxSteer: {v.max_steer_force}\n")
 
 
 class Game:
@@ -386,7 +390,7 @@ class Game:
         # used to save csv file
         self.history = []
         header = ["Age", "MaxVel/MaxHP", "Food Attraction",
-                  "Poison Attraction", "Food Distance", "Poison Distance"]
+                  "Poison Attraction", "Food Distance", "Poison Distance", "Max Steer Force"]
         self.history.append(header)
 
         # all the sprite groups
