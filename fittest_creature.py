@@ -22,8 +22,8 @@ SAVE_TO_CSV = False
 CSV_NAME = str(int(time())) + "_data_v2.csv"
 
 # Switches how we choose the creatures that breed, with this
-ONLY_RECORD_BREEDS = True
 # only the creature with the record age will breed, even if it died already
+ONLY_RECORD_BREEDS = True
 
 TOTAL_CREATURES = 12
 MIN_CREATURE_SIZE = 7
@@ -86,6 +86,10 @@ def translate(value, left_min, left_max, right_min, right_max):
 class Creature(pg.sprite.Sprite):
     def __init__(self, pos, dna=None):
         super().__init__()
+
+        # TEST
+        # dna = [0.5, 0.9, 0.03, 0.9, 0.5]
+        ####
 
         self.dna = []
         # if we don't have dna, create a random one
@@ -169,7 +173,7 @@ class Creature(pg.sprite.Sprite):
 
     def seek(self, target):
         desired = (target - self.pos)
-        if desired.length() > 0.1:
+        if desired.length() > 0.001:
             desired = desired.normalize() * self.max_vel
         steer = (desired - self.vel)
         if steer.length() > self.max_steer_force:
@@ -180,7 +184,6 @@ class Creature(pg.sprite.Sprite):
         now = pg.time.get_ticks()
         if now - self.last_target_time > WANDER_RING_WAIT:
             self.last_target_time = now
-
             new_pos = vec((randint(0, int(WIN_WIDTH)),
                            randint(0, int(WIN_HEIGHT))))
             if self.vel.length():
@@ -192,50 +195,54 @@ class Creature(pg.sprite.Sprite):
             vec(WANDER_RING_RADIUS, 0).rotate(uniform(0, 360))
 
         # self.wander_target = target  # only for drawing its vector
-
         self.apply_force(self.seek(target))
 
-    def seek_food(self, foods):
+    def seek_targets(self, targets):
+        # we start with a steer of 0 length
         steer = vec(0.0, 0.0)
-        record_min_dist = float('inf')
-        record_food = None
 
-        for f in foods:
-            d = (self.pos - f.pos).length()
-
-            # food or poison
-            check_dist = 0
-            attraction = 0
-            if f.is_poison:
-                check_dist = self.poison_dist
-                attraction = self.poison_attraction
+        # create a dict with all the targets in range
+        targets_inrange = {}
+        for t in targets:
+            dist = (self.pos - t.pos).length()
+            if t.is_poison:
+                if dist <= self.poison_dist:
+                    targets_inrange[t] = dist
             else:
-                check_dist = self.food_dist
-                attraction = self.food_attraction
+                if dist <= self.food_dist:
+                    targets_inrange[t] = dist
 
-            if d <= check_dist:
-                if d < record_min_dist:
-                    record_min_dist = d
-                    record_food = f
-                # apply more force the closest it is to the target
-                d_diff = translate(d, int(check_dist * 1.20), 0, 0, attraction)
-                steer += self.seek(f.pos) * d_diff
+        if len(targets_inrange):
+            min_dist = min(targets_inrange.values())
+            for t, dist in targets_inrange.items():
+                # get the steer force for the current target
+                steer_force = (self.seek(t.pos))
+                # apply the force according to the attraction
+                min_dist_mult = 1
+                if dist == min_dist:
+                    min_dist_mult = 2
 
-        # apply some more force to the closest target, (avoids stucks)
-        if record_food is not None:
-            if record_food.is_poison:
-                attraction = self.poison_attraction
-            else:
-                attraction = self.food_attraction
-            steer += self.seek(record_food.pos) * attraction
+                if t.is_poison:
+                    steer_force *= self.poison_attraction * min_dist_mult
+                else:
+                    steer_force *= self.food_attraction * min_dist_mult
 
-        if steer.length() > self.max_steer_force:
-            steer.scale_to_length(self.max_steer_force)
+                # the closer, the more steer_force
+                if dist:
+                    steer_force /= dist
 
-        if steer.length() > 0.4:  # 0.4 to avoid getting stuck between opposite forces
-            # now we apply all the calculated steer force
+                # sum all the steer_force
+                steer += steer_force
+
+            # in case steer is too low
+            steer *= self.max_vel
+
+            if steer.length() > self.max_steer_force:
+                steer.scale_to_length(self.max_steer_force)
+            # finally apply the steer to the acc
             self.apply_force(steer)
         else:
+            # nothing in range, go wander
             self.wander_by_ring()
 
     def apply_force(self, force):
@@ -248,8 +255,8 @@ class Creature(pg.sprite.Sprite):
             self.health += FOOD_VALUE
         self.health = max(0, min(self.health, self.max_health))
 
-    def update(self, dt, foods, save_to_csv):
-        self.seek_food(foods)
+    def update(self, dt, targets):
+        self.seek_targets(targets)
 
         self.vel += self.acc
         if self.vel.length() > self.max_vel:
@@ -382,7 +389,8 @@ class Game:
 
         # used to save csv file
         self.history = []
-        header = ["Age", "MaxVel/MaxHP", "Food Attraction", "Poison Attraction", "Food Distance", "Poison Distance"]
+        header = ["Age", "MaxVel/MaxHP", "Food Attraction",
+                  "Poison Attraction", "Food Distance", "Poison Distance"]
         self.history.append(header)
 
         # all the sprite groups
@@ -518,7 +526,7 @@ class Game:
             self.events()
             self.key_events()
 
-            self.all_creatures.update(dt, self.all_foods, self.save_to_csv)
+            self.all_creatures.update(dt, self.all_foods)
             for creature in self.all_creatures:
                 if creature.is_dead():
                     row = []
@@ -556,7 +564,8 @@ class Game:
             if self.save_to_csv:
                 if (pg.time.get_ticks() // 1000) % 20:
                     with open(CSV_NAME, mode='a', newline='') as data_file:
-                        data_writer = csv.writer(data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                        data_writer = csv.writer(
+                            data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
                         for i in range(len(self.history)):
                             data_writer.writerow(self.history[i])
                     self.history.clear()
