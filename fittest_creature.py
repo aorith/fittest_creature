@@ -263,19 +263,8 @@ class Creature(pg.sprite.Sprite):
         self.age += dt
         self.draw_image()
 
-        # we ded?
-        if self.health <= 0:
-            if save_to_csv:
-                with open(CSV_NAME, mode='a', newline='') as data_file:
-                    data_writer = csv.writer(
-                        data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                    row = []
-                    row.append(int(self.age))
-                    for i in range(DNA_SIZE):
-                        row.append(self.dna[i])
-                    data_writer.writerow(row)
-            self.kill()
-            del self
+    def is_dead(self):
+        return self.health <= 0
 
     def draw_image(self):
         green = translate(self.health, 0, self.max_health, 0, 255)
@@ -390,6 +379,11 @@ class Game:
         self.record = None
         self.age_record = 0
         self.current_record = None
+
+        # used to save csv file
+        self.history = []
+        header = ["Age", "MaxVel/MaxHP", "Food Attraction", "Poison Attraction", "Food Distance", "Poison Distance"]
+        self.history.append(header)
 
         # all the sprite groups
         self.all_sprites = pg.sprite.Group()
@@ -525,6 +519,16 @@ class Game:
             self.key_events()
 
             self.all_creatures.update(dt, self.all_foods, self.save_to_csv)
+            for creature in self.all_creatures:
+                if creature.is_dead():
+                    row = []
+                    row.append(int(creature.age))
+                    for i in range(DNA_SIZE):
+                        row.append(creature.dna[i])
+                    self.history.append(row)
+                    creature.kill()
+                    del creature
+
             process_collisions(self.all_creatures, self.all_foods)
 
             self.screen.fill(BACKGROUND_COLOR)
@@ -548,6 +552,14 @@ class Game:
                     f"(Running: {int(pg.time.get_ticks() / 1000)} seconds) (Alive: {len(self.all_creatures)}) " +
                     f"(Record: {int(self.age_record)} secons) " +
                     f"(Only record breeds: {str(self.only_record_breeds)}) {csv_out}")
+
+            if self.save_to_csv:
+                if (pg.time.get_ticks() // 1000) % 20:
+                    with open(CSV_NAME, mode='a', newline='') as data_file:
+                        data_writer = csv.writer(data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                        for i in range(len(self.history)):
+                            data_writer.writerow(self.history[i])
+                    self.history.clear()
 
             # last action before repeating the loop, let the time run!
             self.clock.tick(FPS)
