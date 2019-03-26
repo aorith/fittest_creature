@@ -1,7 +1,11 @@
 # fittest_ship
-Evolutionary steering behaviours with genetic algorithm written in python
+Evolutionary Genetic Algorithm for Steering Behaviours written in python with pygame
 
 ## Disclaimer
+
+Firstly thanks to Daniel Shiffman for the idea, the nature of code, and his awesome videos.
+
+If someone reads this know that you're welcome to point code mistakes (there will be) :)
 
 This is more of a remainder for myself if I forget how does it work in the future, but I hope it helps anyone interested in python and genetic algorithms.
 
@@ -41,7 +45,7 @@ The breed function of the creature returns a mutated version of its own DNA, the
 So, the more age a creature has, the less chance to mutate any property, and if it mutates, the difference in values will be lower, that way when we have a bad population (bad = age is low) creatures will mutate more.
 Then that mutated DNA is used to spawn a new creature.
 
-When we have a pool of creatures with age > BREEDING_AGE, they will try to breed randomly. We can turn on "ONLY_RECORD_BREEDS" so that only the creature that has the current all time age record can breed, even if that creature is dead, which I guess will find creatures with better fitness faster.
+When we have a pool of creatures with age > BREEDING_AGE, they will try to breed randomly. We can turn on "ONLY_RECORD_BREEDS" so that only the creature that currently has "all time age record" can breed, even if that creature is dead..
 
 There are a few more variables playing into this, the code has a lot of comments explaining it, and it being written in python is pretty well readable :)
 
@@ -50,5 +54,5 @@ There are a few more variables playing into this, the code has a lot of comments
 - Press **v** to turn on/off a visual representation of food/poison properties of the creatures.
 - Press **r** to turn on/off only record can breed. (current mode can be seen on status bar)
 - Press **s** to turn on/off save to csv file. (current mode can be seen on status bar).
-_(Each time a creature dies, its age followed by its DNA will be stored in a *.csv file in the same directory as the script. It can be disabled by setting the variable SAVE_TO_CSV to False. Nice for creating charts...)_
+_This will save data in a .csv file every X seconds, regarding creatures age and DNA values, nice for plotting._
 - Press **p** to print to the console information about the current creature age record and the all time record.
