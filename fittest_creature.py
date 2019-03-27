@@ -1,5 +1,6 @@
 from random import randint, uniform, random, choice
 from math import sqrt
+from statistics import mean
 import csv
 from time import time
 import os
@@ -20,7 +21,8 @@ FOOD_COLOR = (50, 50, 255)
 POISON_COLOR = (255, 50, 50)
 
 SAVE_TO_CSV = False
-CSV_NAME = str(int(time())) + "_data_v2.csv"
+CSV_NAME = str(int(time())) + "_data.csv"
+SAVE_DELAY = 20 * 1000  # in milliseconds
 
 # Switches how we choose the creatures that breed, with this
 # only the creature with the record age will breed, even if it died already
@@ -371,8 +373,9 @@ def process_collisions(group1, group2):
 
 
 def print_info(v):
-    print(f"\n[{pg.time.get_ticks()}] [{id(v)}] [Fitness: {v.fitness()}]\n" +
-          f"currHP: {v.health}, Gen: {v.gen}, Childs: {v.childs}, Age: {v.age} seconds.\n" +
+    print(f"\n[{pg.time.get_ticks()}] [{id(v)}] [Fitness: {v.fitness()}] Age: {v.age} seconds." +
+          f" F.Eaten: {v.eaten}\n" +
+          f"currHP: {v.health}, Gen: {v.gen}, Childs: {v.childs}\n" +
           f"DNA: {v.dna}\n" +
           f"FoodAttr: {v.food_attraction}, PoisonAttr: {v.poison_attraction}\n" +
           f"FoodDist: {v.food_dist}, PoisonDist: {v.poison_dist}\n" +
@@ -399,9 +402,12 @@ class Game:
 
         # used to save csv file
         self.history = []
-        header = ["Age", "Fitness", "MaxVel/MaxHP", "Food Attraction",
+        self.perm_hist = []
+        header = ["Time(ms)", "Fitness", "Age", "F.Eaten", "MaxVel/MaxHP", "Food Attraction",
                   "Poison Attraction", "Food Distance", "Poison Distance", "Max Steer Force"]
         self.history.append(header)
+        self.perm_hist.append(header)
+        self.last_save = 0  # last time csv data was saved
 
         # all the sprite groups
         self.all_sprites = pg.sprite.Group()
@@ -526,11 +532,50 @@ class Game:
 
     def append_to_hist(self, creature):
         row = []
-        row.append(int(creature.age))
+        row.append(pg.time.get_ticks())
         row.append(creature.fitness())
+        row.append(creature.age)
+        row.append(creature.eaten)
         for i in range(DNA_SIZE):
             row.append(creature.dna[i])
         self.history.append(row)
+        self.perm_hist.append(row)
+
+    def print_average(self):
+        print("")
+
+        def isfloat(value):
+            """ returns true if value can be a float """
+            try:
+                float(value)
+                return True
+            except ValueError:
+                return False
+
+        def column(matrix, i):
+            """ returns the column of index i removing headers """
+            return [row[i] for row in matrix if isfloat(row[i])]
+
+        # last SAVE_DELAY millisecs average fitness
+        average = 0
+        if self.history:
+            fitness_col = column(self.history, 1)
+            if fitness_col:
+                average = mean(fitness_col)
+            if average:
+                print(
+                    f"[{pg.time.get_ticks()}] - Last {SAVE_DELAY // 1000} secs Fitness Average: {average}")
+
+        # All time average fitness
+        average = 0
+        if self.perm_hist:
+            fitness_col = column(self.perm_hist, 1)
+            if fitness_col:
+                average = mean(fitness_col)
+            if average:
+                print(
+                    f"[{pg.time.get_ticks()}] - All time Fitness Average: {average}")
+        print("")
 
     def game_loop(self):
         while self.running:
@@ -572,7 +617,7 @@ class Game:
                 if self.save_to_csv:
                     csv_out = f"(Saving csv to: {CSV_NAME})"
                 pg.display.set_caption(
-                    "Fittest Creature. (Fps: {:.2f}) ".format(self.clock.get_fps()) +
+                    "Fittest Creature (Fps: {:.2f}) ".format(self.clock.get_fps()) +
                     f"(Running: {int(pg.time.get_ticks() / 1000)} seconds) (Alive: {len(self.all_creatures)}) " +
                     f"(Record: {int(self.age_record)} secons) " +
                     "(Record fitness: {:.2f}) ".format(self.record.fitness()) +
@@ -580,12 +625,15 @@ class Game:
 
             # save to csv every X secs
             if self.save_to_csv:
-                if not (pg.time.get_ticks() // 1000) % 20:
+                now = pg.time.get_ticks()
+                if now - self.last_save > SAVE_DELAY:
+                    self.last_save = now
                     with open(CSV_NAME, mode='a', newline='') as data_file:
                         data_writer = csv.writer(
                             data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                        for i in range(len(self.history)):
-                            data_writer.writerow(self.history[i])
+                        for line in self.history:
+                            data_writer.writerow(line)
+                    self.print_average()
                     self.history.clear()
 
             # last action before repeating the loop, let the time run!
