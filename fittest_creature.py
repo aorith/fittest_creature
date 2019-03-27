@@ -41,8 +41,8 @@ NEW_CREATURE_CHANCE = 0.003
 DNA_SIZE = 6  # number of values in the dna, don't edit
 
 # below values are affected by the fitness of the creature
-MAX_FITNESS_BREED = 300  # the lower, the more chance to breed
-MAX_FITNESS_MUTATION = 25  # the lower, the sooner mutation value will reach 0
+# breed_chance = x / (BREED_CHANCE_VALUE + x);  x --> fitness
+BREED_CHANCE_VALUE = 700
 MAX_MUTATION_VALUE = 0.2  # how much a property will change when mutated
 
 MUTATION_CHANCE = 0.1  # chance to mutate each property, not affected by fitness
@@ -148,14 +148,12 @@ class Creature(pg.sprite.Sprite):
 
     def fitness(self):
         """ returns fitness value of this creature """
-        return sqrt(self.age + self.eaten)
+        return sqrt(self.age + self.eaten * 2)
 
     def mutate(self, dna):
         """ returns a mutated (or not) copy of its own dna """
         # range value in which the dna can mutate
-        mutation_range = translate(self.fitness(),
-                                   MAX_FITNESS_MUTATION, 0,
-                                   0, MAX_MUTATION_VALUE)
+        mutation_range = MAX_MUTATION_VALUE/((self.fitness()*0.1)**2 + 1)
         for i in range(DNA_SIZE):
             if random() < MUTATION_CHANCE:
                 # random offset based on mutation range
@@ -174,7 +172,8 @@ class Creature(pg.sprite.Sprite):
 
     def breed(self):
         # higher fitness = higher chance to breed
-        if random() < translate(self.fitness(), 0, MAX_FITNESS_BREED, 0, 0.5):
+        x = self.fitness()
+        if random() < (x / (BREED_CHANCE_VALUE + x)):
             return self.mutate(self.dna.copy())
         return None
 
@@ -403,8 +402,8 @@ class Game:
         # used to save csv file
         self.history = []
         self.perm_hist = []
-        header = ["Time","Fitness","Age","FEaten","MaxVel_MaxHP","FoodAttraction",
-                "PoisonAttraction","FoodDistance","PoisonDistance","MaxSteerForce"]
+        header = ["Time", "Fitness", "Age", "FEaten", "MaxVel_MaxHP", "FoodAttraction",
+                  "PoisonAttraction", "FoodDistance", "PoisonDistance", "MaxSteerForce"]
         self.history.append(header)
         self.perm_hist.append(header)
         self.last_save = 0  # last time csv data was saved
