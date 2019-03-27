@@ -1,4 +1,5 @@
 from random import randint, uniform, random, choice
+from math import sqrt
 import csv
 from time import time
 import os
@@ -23,7 +24,7 @@ CSV_NAME = str(int(time())) + "_data_v2.csv"
 
 # Switches how we choose the creatures that breed, with this
 # only the creature with the record age will breed, even if it died already
-ONLY_RECORD_BREEDS = True
+ONLY_RECORD_BREEDS = False
 
 TOTAL_CREATURES = 10
 MIN_CREATURE_SIZE = 7
@@ -31,17 +32,18 @@ MAX_CREATURE_SIZE = 53
 
 # chance to spawn a new creature to add variation to the simulation
 # if this fails an existing creature will try to breed
-# keep it low to favor breeding and let the genetic algorithm work
-# if there are none creatures in the world the spawn_creatures function will spawn em
-NEW_CREATURE_CHANCE = 0.004
+# keep it low to favor breeding
+# if 0 creatures are alive, then spawn_creatures function will spawn in bulk
+NEW_CREATURE_CHANCE = 0.003
 
 DNA_SIZE = 6  # number of values in the dna, don't edit
-# both mutation variables below decrease with age:
-MUTATION_CHANCE = 0.1  # chance to mutate each property
-MUTATION_VALUE = 0.1  # how much a property will change when mutated
 
-BREEDING_WAIT = 15 * 1000  # in milliseconds, wait time to breed again
-BREEDING_AGE = 50  # seconds the creature needs to live before it can breed
+# below values are affected by the fitness of the creature
+MAX_FITNESS_BREED = 300  # the lower, the more chance to breed
+MAX_FITNESS_MUTATION = 25  # the lower, the sooner mutation value will reach 0
+MAX_MUTATION_VALUE = 0.2  # how much a property will change when mutated
+
+MUTATION_CHANCE = 0.1  # chance to mutate each property, not affected by fitness
 
 # this should avoid that a new creature spawns directly eating poison or food
 # but with (MAX_CREATURE_SIZE // 2) + 1 we won't avoid bigger creatures to pass between
@@ -52,15 +54,15 @@ DISTANCE_BETWEEN_SPRITES = (MAX_CREATURE_SIZE // 2) + 1
 TOTAL_POISON = 69
 TOTAL_FOOD = 62
 HEALTH_DEGENERATION = 9.1  # creatures will lose hp per second
-POISON_VALUE = -99  # negative value as poison is bad!
-FOOD_VALUE = 20
+POISON_VALUE = -41  # negative value as poison is bad!
+FOOD_VALUE = 17
 
 # Values that will vary according to DNA changes, but have a max value
 MAX_STEER_FORCE = 4
 MAX_PERCEPTION_DIST = 300  # max dist at which creatures can evolve to see food & poison
 # Creatures have a constraint, they evolve choosing between maxvel and maxhealth
 # having more maxhealth means bigger size and less maxvel
-TOTAL_MAXVEL_MAXHP_POINTS = 220
+TOTAL_MAXVEL_MAXHP_POINTS = 250
 # we don't want creatures to spawn with HP values lower than this
 # very low values make no sense because they die with health degeneration too fast
 MIN_HP = 30
@@ -133,39 +135,45 @@ class Creature(pg.sprite.Sprite):
         self.vel = vec(0.0, 0.0)
         self.acc = vec(0.0, 0.0)
         self.age = 0
+        self.eaten = 0
         self.childs = 0
         self.gen = 0
-
-        self.last_bred_time = 0
 
         self.health = self.max_health
 
         self.last_target_time = 0
         self.wander_ring_pos = self.pos
 
+    def fitness(self):
+        """ returns fitness value of this creature """
+        return sqrt(self.age + self.eaten)
+
     def mutate(self, dna):
         """ returns a mutated (or not) copy of its own dna """
-        mutate_range = MUTATION_VALUE / \
-            (self.age / 60)  # the longer it has been alive, the less it mutates
+        # range value in which the dna can mutate
+        mutation_range = translate(self.fitness(),
+                                   MAX_FITNESS_MUTATION, 0,
+                                   0, MAX_MUTATION_VALUE)
         for i in range(DNA_SIZE):
             if random() < MUTATION_CHANCE:
-                print(
-                    f"[{pg.time.get_ticks()}] [{id(self)}] mutating {i}: {dna[i]} --> ", end="")
-                offset = translate(random(), 0, 1, -mutate_range, mutate_range)
+                # random offset based on mutation range
+                offset = translate(random(),
+                                   0, 1,
+                                   -mutation_range, mutation_range)
+                print(f"[{pg.time.get_ticks()}] [{id(self)}] " +
+                      f"mutating [{i}] (range:{mutation_range}, " +
+                      f"offset:{offset}): {dna[i]} --> ", end="")
+                # apply the offset
                 dna[i] += offset
+                # ensure we aren't out of limits
                 dna[i] = max(0, min(dna[i], 1))
-                print(f"{dna[i]} !!")
+                print(f"{dna[i]}")
         return dna
 
     def breed(self):
-        # we firstly check if the creature has enough age to breed
-        # then we apply some randomness, it will have greater chance to breed the more age it has
-        if self.age > BREEDING_AGE and random() < translate(self.age, 50, 1000, 0.01, 0.5):
-            now = pg.time.get_ticks()
-            # check if it has bred recently, if so, the creature can't breed again yet
-            if now - self.last_bred_time > BREEDING_WAIT:
-                self.last_bred_time = now
-                return self.mutate(self.dna.copy())
+        # higher fitness = higher chance to breed
+        if random() < translate(self.fitness(), 0, MAX_FITNESS_BREED, 0, 0.5):
+            return self.mutate(self.dna.copy())
         return None
 
     def seek(self, target):
@@ -252,6 +260,7 @@ class Creature(pg.sprite.Sprite):
             self.health += POISON_VALUE
         else:
             self.health += FOOD_VALUE
+            self.eaten += 1
         self.health = max(0, min(self.health, self.max_health))
 
     def update(self, dt, targets):
@@ -362,7 +371,7 @@ def process_collisions(group1, group2):
 
 
 def print_info(v):
-    print(f"\n[{pg.time.get_ticks()}] [{id(v)}]\n" +
+    print(f"\n[{pg.time.get_ticks()}] [{id(v)}] [Fitness: {v.fitness()}]\n" +
           f"currHP: {v.health}, Gen: {v.gen}, Childs: {v.childs}, Age: {v.age} seconds.\n" +
           f"DNA: {v.dna}\n" +
           f"FoodAttr: {v.food_attraction}, PoisonAttr: {v.poison_attraction}\n" +
@@ -385,11 +394,12 @@ class Game:
         # record creature tracking
         self.record = None
         self.age_record = 0
+        self.fitness_record = 0
         self.current_record = None
 
         # used to save csv file
         self.history = []
-        header = ["Age", "MaxVel/MaxHP", "Food Attraction",
+        header = ["Age", "Fitness", "MaxVel/MaxHP", "Food Attraction",
                   "Poison Attraction", "Food Distance", "Poison Distance", "Max Steer Force"]
         self.history.append(header)
 
@@ -435,11 +445,12 @@ class Game:
     def check_record(self):
         # check for the current record and global record of creature age
         current_record = None
-        current_age_record = 0
+        current_fitness_record = 0
         for c in self.all_creatures:
             # record of all times:
-            if c.age > self.age_record:
+            if c.fitness() > self.fitness_record:
                 self.age_record = c.age
+                self.fitness_record = c.fitness()
                 if self.record is not None and c is not self.record:
                     print("\n---------------------- New Record --------------------")
                     print("old:")
@@ -450,8 +461,8 @@ class Game:
                 self.record = c
 
             # current age record creature:
-            if c.age > current_age_record:
-                current_age_record = c.age
+            if c.fitness() > current_fitness_record:
+                current_fitness_record = c.fitness()
                 current_record = c
                 self.current_record = c
 
@@ -516,6 +527,7 @@ class Game:
     def append_to_hist(self, creature):
         row = []
         row.append(int(creature.age))
+        row.append(creature.fitness())
         for i in range(DNA_SIZE):
             row.append(creature.dna[i])
         self.history.append(row)
@@ -563,6 +575,7 @@ class Game:
                     "Fittest Creature. (Fps: {:.2f}) ".format(self.clock.get_fps()) +
                     f"(Running: {int(pg.time.get_ticks() / 1000)} seconds) (Alive: {len(self.all_creatures)}) " +
                     f"(Record: {int(self.age_record)} secons) " +
+                    "(Record fitness: {:.2f}) ".format(self.record.fitness()) +
                     f"(Only record breeds: {str(self.only_record_breeds)}) {csv_out}")
 
             # save to csv every X secs
