@@ -42,9 +42,8 @@ The creature above has some nice properties to survive, its attracted to food (p
 
 Creatures have a fitness function, calculated as sqrt(age + food eaten), the more fitness, the more likely they are to breed, and the less their dna will mutate in the child.
 
-The breed function of the creature returns a mutated version of its own DNA, there is a chance to mutate each property, and a total amout that property can mutate, both values **decrease** as the creature has more ~~age~~ fitness.
-So, the more ~~age~~ fitness a creature has, the less chance to mutate any property, and if it mutates, the difference in values will be lower, that way when we have a bad population (bad = ~~age~~ fitness is low) creatures will mutate more.
-Then that mutated DNA is used to spawn a new creature.
+The breed function of the creature returns a mutated version of its own DNA, there is a chance to mutate each property, and a total amount that property can mutate which **decrease** as the creature has more ~~age~~ fitness.
+So, the more ~~age~~ fitness a creature has, the less a property can mutate, that way when we have a bad population (bad = ~~age~~ fitness is low) creatures will mutate more.
 
 Creatures try to breed randomly each frame. We can turn on "ONLY_RECORD_BREEDS" so that only the creature that currently has "all time ~~age~~ fitness record" can breed, even if that creature is dead..
 
