@@ -403,8 +403,8 @@ class Game:
         # used to save csv file
         self.history = []
         self.perm_hist = []
-        header = ["Time(ms)", "Fitness", "Age", "F.Eaten", "MaxVel/MaxHP", "Food Attraction",
-                  "Poison Attraction", "Food Distance", "Poison Distance", "Max Steer Force"]
+        header = ["Time","Fitness","Age","FEaten","MaxVel_MaxHP","FoodAttraction",
+                "PoisonAttraction","FoodDistance","PoisonDistance","MaxSteerForce"]
         self.history.append(header)
         self.perm_hist.append(header)
         self.last_save = 0  # last time csv data was saved
