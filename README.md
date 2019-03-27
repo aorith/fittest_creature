@@ -38,14 +38,15 @@ The creature above has some nice properties to survive, its attracted to food (p
 
 ### How does the genetic algorithm work here
 
-Basically, each creature has a variable called "age", which stores its age in seconds, when a creature has more than the value defined in "BREEDING_AGE" variable, it will have a chance to breed (which is higher the more age it has). That way we can establish that the age property will be the fitness value of this algorithm.
+~~Basically, each creature has a variable called "age", which stores its age in seconds, when a creature has more than the value defined in "BREEDING_AGE" variable, it will have a chance to breed (which is higher the more age it has). That way we can establish that the age property will be the fitness value of this algorithm.~~
 
+Creatures have a fitness function, calculated as sqrt(age + food eaten), the more fitness, the more likely they are to breed, and the less their dna will mutate in the child.
 
-The breed function of the creature returns a mutated version of its own DNA, there is a chance to mutate each property, and a total amout that property can mutate, both values **decrease** as the creature has more age.
-So, the more age a creature has, the less chance to mutate any property, and if it mutates, the difference in values will be lower, that way when we have a bad population (bad = age is low) creatures will mutate more.
+The breed function of the creature returns a mutated version of its own DNA, there is a chance to mutate each property, and a total amout that property can mutate, both values **decrease** as the creature has more ~~age~~ fitness.
+So, the more ~~age~~ fitness a creature has, the less chance to mutate any property, and if it mutates, the difference in values will be lower, that way when we have a bad population (bad = ~~age~~ fitness is low) creatures will mutate more.
 Then that mutated DNA is used to spawn a new creature.
 
-When we have a pool of creatures with age > BREEDING_AGE, they will try to breed randomly. We can turn on "ONLY_RECORD_BREEDS" so that only the creature that currently has "all time age record" can breed, even if that creature is dead..
+Creatures try to breed randomly each frame. We can turn on "ONLY_RECORD_BREEDS" so that only the creature that currently has "all time ~~age~~ fitness record" can breed, even if that creature is dead..
 
 There are a few more variables playing into this, the code has a lot of comments explaining it, and it being written in python is pretty well readable :)
 
@@ -55,4 +56,4 @@ There are a few more variables playing into this, the code has a lot of comments
 - Press **r** to turn on/off only record can breed. (current mode can be seen on status bar)
 - Press **s** to turn on/off save to csv file. (current mode can be seen on status bar).
 _This will save data in a .csv file every X seconds, regarding creatures age and DNA values, nice for plotting._
-- Press **p** to print to the console information about the current creature age record and the all time record.
+- Press **p** to print to the console information about the current records.
