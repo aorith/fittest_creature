@@ -38,11 +38,11 @@ MAX_CREATURE_SIZE = 53
 # if 0 creatures are alive, then spawn_creatures function will spawn in bulk
 NEW_CREATURE_CHANCE = 0.003
 
-DNA_SIZE = 6  # number of values in the dna, don't edit
+DNA_SIZE = 7  # number of values in the dna.
 
 # below values are affected by the fitness of the creature
 # breed_chance = x / (BREED_CHANCE_VALUE + x);  x --> fitness
-BREED_CHANCE_VALUE = 700
+BREED_CHANCE_VALUE = 850
 MAX_MUTATION_VALUE = 0.2  # how much a property will change when mutated
 
 MUTATION_CHANCE = 0.1  # chance to mutate each property, not affected by fitness
@@ -62,6 +62,9 @@ FOOD_VALUE = 17
 # Values that will vary according to DNA changes, but have a max value
 MAX_STEER_FORCE = 4
 MAX_PERCEPTION_DIST = 300  # max dist at which creatures can evolve to see food & poison
+# the highter dir_angle_mult a creature has, the higher priority for targets in front of it
+MIN_DIR_ANGLE_MULT = 1
+MAX_DIR_ANGLE_MULT = 5
 # Creatures have a constraint, they evolve choosing between maxvel and maxhealth
 # having more maxhealth means bigger size and less maxvel
 TOTAL_MAXVEL_MAXHP_POINTS = 250
@@ -123,6 +126,8 @@ class Creature(pg.sprite.Sprite):
         self.poison_dist = translate(
             self.dna[4], 0, 1, self.radius, MAX_PERCEPTION_DIST)
         self.max_steer_force = translate(self.dna[5], 0, 1, 0, MAX_STEER_FORCE)
+        self.dir_angle_mult = translate(
+            self.dna[6], 0, 1, MIN_DIR_ANGLE_MULT, MAX_DIR_ANGLE_MULT)
 
         # required to draw the creature, the variable name must be "image" for pygame sprite.
         self.image = pg.Surface((self.size, self.size), pg.SRCALPHA)
@@ -223,21 +228,29 @@ class Creature(pg.sprite.Sprite):
             for t, dist in targets_inrange.items():
                 # get the steer force for the current target
                 steer_force = (self.seek(t.pos))
-                # apply the force according to the attraction
+
+                # calculate the difference in angle between
+                # the target and our velocity, less difference will have
+                # a priority (targets we have in front)
+                dir_to_target = (t.pos - self.pos)
+                _, angle_d = dir_to_target.as_polar()
+                _, angle = self.vel.as_polar()
+                angle_diff = abs(angle - angle_d)
+
                 min_dist_mult = 1
                 if dist == min_dist:
                     min_dist_mult = 2
 
                 if t.is_poison:
                     steer_force *= self.poison_attraction * min_dist_mult
-                    # the further away the less steer force
-                    steer_force /= translate(dist, 0,
-                                             self.poison_dist, 1, MAX_PERCEPTION_DIST)
                 else:
                     steer_force *= self.food_attraction * min_dist_mult
-                    # the further away the less steer force
-                    steer_force /= translate(dist, 0,
-                                             self.food_dist, 1, MAX_PERCEPTION_DIST)
+
+                # adjust steer with distance and dir angle
+                # the higher dir_angle_mult a creature has, the higher priority
+                # targets in front of it will have (i'm proud of this ^^)
+                steer_force /= (1 + dist +
+                                sqrt(angle_diff * self.dir_angle_mult))
 
                 # sum all the steer_force
                 steer += steer_force
@@ -296,8 +309,8 @@ class Creature(pg.sprite.Sprite):
                                  self.radius + self.eye_radius + 2, abs(self.eye_radius - 2), (red, red, green))
 
         # rotate image
-        direction = self.vel  # where the creature is going
-        _, angle = direction.as_polar()  # get direction angle
+        # where the creature is going
+        _, angle = self.vel.as_polar()  # get direction angle
         # transform with the negative angle
         self.image = pg.transform.rotate(self.orig_image, -angle)
         # update rect position
@@ -378,8 +391,8 @@ def print_info(v):
           f"DNA: {v.dna}\n" +
           f"FoodAttr: {v.food_attraction}, PoisonAttr: {v.poison_attraction}\n" +
           f"FoodDist: {v.food_dist}, PoisonDist: {v.poison_dist}\n" +
-          f"MaxHealth: {v.max_health}, MaxVel: {v.max_vel}, Size: {v.size}, " +
-          f"MaxSteer: {v.max_steer_force}\n")
+          f"MaxHealth: {v.max_health}, MaxVel: {v.max_vel}, Size: {v.size}\n" +
+          f"MaxSteer: {v.max_steer_force}, DirAngleMult: {v.dir_angle_mult}\n")
 
 
 class Game:
@@ -403,7 +416,8 @@ class Game:
         self.history = []
         self.perm_hist = []
         header = ["Time", "Fitness", "Age", "FEaten", "MaxVel_MaxHP", "FoodAttraction",
-                  "PoisonAttraction", "FoodDistance", "PoisonDistance", "MaxSteerForce"]
+                  "PoisonAttraction", "FoodDistance", "PoisonDistance", "MaxSteerForce",
+                  "DirAngleMult"]
         self.history.append(header)
         self.perm_hist.append(header)
         self.last_save = 0  # last time csv data was saved
