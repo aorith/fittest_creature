@@ -1,16 +1,16 @@
 from random import randint, uniform, random, choice
 from math import sqrt
-from statistics import mean
-import csv
 import os
 import pygame as pg
 import pygame.gfxdraw
 from pygame.math import Vector2 as vec
 
 from settings import *
+from datastats import *
 
 # change directory where the script is
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
+
 
 def translate(value, left_min, left_max, right_min, right_max):
     """ returns scaled value from the ranges of the left to right """
@@ -336,17 +336,6 @@ def process_collisions(group1, group2):
                 del food  # delete instanciated object
 
 
-def print_info(v):
-    print(f"\n[{pg.time.get_ticks()}] [{id(v)}] [Fitness: {v.fitness()}] Age: {v.age} seconds." +
-          f" F.Eaten: {v.eaten}\n" +
-          f"currHP: {v.health}, Gen: {v.gen}, Childs: {v.childs}\n" +
-          f"DNA: {v.dna}\n" +
-          f"FoodAttr: {v.food_attraction}, PoisonAttr: {v.poison_attraction}\n" +
-          f"FoodDist: {v.food_dist}, PoisonDist: {v.poison_dist}\n" +
-          f"MaxHealth: {v.max_health}, MaxVel: {v.max_vel}, Size: {v.size}\n" +
-          f"MaxSteer: {v.max_steer_force}, DirAngleMult: {v.dir_angle_mult}\n")
-
-
 class Game:
     def __init__(self):
         self.screen = pg.display.set_mode((WIN_WIDTH, WIN_HEIGHT), pg.SRCALPHA)
@@ -358,21 +347,8 @@ class Game:
         self.only_record_breeds = ONLY_RECORD_BREEDS
         self.save_to_csv = SAVE_TO_CSV
 
-        # record creature tracking
-        self.record = None
-        self.age_record = 0
-        self.fitness_record = 0
-        self.current_record = None
-
-        # used to save csv file
-        self.history = []
-        self.perm_hist = []
-        header = ["Time", "Fitness", "Age", "FEaten", "MaxVel_MaxHP", "FoodAttraction",
-                  "PoisonAttraction", "FoodDistance", "PoisonDistance", "MaxSteerForce",
-                  "DirAngleMult"]
-        self.history.append(header)
-        self.perm_hist.append(header)
-        self.last_save = 0  # last time csv data was saved
+        # for storing data and statistics about the game
+        self.ds = Datastats()
 
         # all the sprite groups
         self.all_sprites = pg.sprite.Group()
@@ -398,15 +374,18 @@ class Game:
                     self.only_record_breeds = not self.only_record_breeds
                 elif event.key == pg.K_s:
                     self.save_to_csv = not self.save_to_csv
+                elif event.key == pg.K_i:
+                    self.ds.print_stats()
                 elif event.key == pg.K_p:
                     print(
                         f"\n[{pg.time.get_ticks()}] [total creatures: {len(self.all_creatures)}]\n")
-                    if self.current_record is not None:
+                    if self.ds.current_fittest is not None:
                         print("Current record info:")
-                        print_info(self.current_record)
-                    if self.record is not None:
+                        print_info(self.ds.current_fittest,
+                                   pg.time.get_ticks())
+                    if self.ds.fittest is not None:
                         print("All times record info:")
-                        print_info(self.record)
+                        print_info(self.ds.fittest, pg.time.get_ticks())
 
     def key_events(self):
         pass
@@ -421,23 +400,23 @@ class Game:
         current_fitness_record = 0
         for c in self.all_creatures:
             # record of all times:
-            if c.fitness() > self.fitness_record:
-                self.age_record = c.age
-                self.fitness_record = c.fitness()
-                if self.record is not None and c is not self.record:
+            if c.fitness() > self.ds.fitness_record:
+                self.ds.age_record = c.age
+                self.ds.fitness_record = c.fitness()
+                if self.ds.fittest is not None and c is not self.ds.fittest:
                     print("\n---------------------- New Record --------------------")
                     print("old:")
-                    print_info(self.record)
+                    print_info(self.ds.fittest, pg.time.get_ticks())
                     print("new:")
-                    print_info(c)
+                    print_info(c, pg.time.get_ticks())
                     print("------------------------------------------------------")
-                self.record = c
+                self.ds.fittest = c
 
             # current age record creature:
             if c.fitness() > current_fitness_record:
                 current_fitness_record = c.fitness()
                 current_record = c
-                self.current_record = c
+                self.ds.current_fittest = c
 
         if current_record is not None:
             pg.gfxdraw.filled_circle(self.screen, int(current_record.pos.x),
@@ -464,7 +443,7 @@ class Game:
             # we can breed if all_creatures is not empty and we still have room
             if len(self.all_creatures) < TOTAL_CREATURES and self.all_creatures:
                 # we pick one random sprite as a parent and try to breed it
-                parent = self.record if self.only_record_breeds else choice(
+                parent = self.ds.fittest if self.only_record_breeds else choice(
                     self.all_creatures.sprites())
                 dna = parent.breed()
                 if dna is not None:
@@ -505,44 +484,8 @@ class Game:
         row.append(creature.eaten)
         for i in range(DNA_SIZE):
             row.append(creature.dna[i])
-        self.history.append(row)
-        self.perm_hist.append(row)
-
-    def print_average(self):
-        print("")
-
-        def isfloat(value):
-            """ returns true if value can be a float """
-            try:
-                float(value)
-                return True
-            except ValueError:
-                return False
-
-        def column(matrix, i):
-            """ returns the column of index i removing headers """
-            return [row[i] for row in matrix if isfloat(row[i])]
-
-        # last SAVE_DELAY millisecs average fitness
-        average = 0
-        if self.history:
-            fitness_col = column(self.history, 1)
-            if fitness_col:
-                average = mean(fitness_col)
-            if average:
-                print(
-                    f"[{pg.time.get_ticks()}] - Last {SAVE_DELAY // 1000} secs Fitness Average: {average}")
-
-        # All time average fitness
-        average = 0
-        if self.perm_hist:
-            fitness_col = column(self.perm_hist, 1)
-            if fitness_col:
-                average = mean(fitness_col)
-            if average:
-                print(
-                    f"[{pg.time.get_ticks()}] - All time Fitness Average: {average}")
-        print("")
+        self.ds.temp_history.append(row)
+        self.ds.history.append(row)
 
     def game_loop(self):
         while self.running:
@@ -579,29 +522,24 @@ class Game:
 
             pg.display.flip()
 
-            if self.record is not None:
+            if self.ds.fittest is not None:
                 csv_out = ""
                 if self.save_to_csv:
-                    csv_out = f"(Saving csv to: {CSV_NAME})"
+                    csv_out = f"(Saving CSVs to: \"{STARTTIME}_*.csv\")"
                 pg.display.set_caption(
                     "Fittest Creature (Fps: {:.2f}) ".format(self.clock.get_fps()) +
                     f"(Running: {int(pg.time.get_ticks() / 1000)} seconds) (Alive: {len(self.all_creatures)}) " +
-                    f"(Record: {int(self.age_record)} secons) " +
-                    "(Record fitness: {:.2f}) ".format(self.record.fitness()) +
+                    f"(Record: {int(self.ds.age_record)} secons) " +
+                    "(Record fitness: {:.2f}) ".format(self.ds.fittest.fitness()) +
                     f"(Only record breeds: {str(self.only_record_breeds)}) {csv_out}")
 
-            # save to csv every X secs
-            if self.save_to_csv:
-                now = pg.time.get_ticks()
-                if now - self.last_save > SAVE_DELAY:
-                    self.last_save = now
-                    with open(CSV_NAME, mode='a', newline='') as data_file:
-                        data_writer = csv.writer(
-                            data_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-                        for line in self.history:
-                            data_writer.writerow(line)
-                    self.print_average()
-                    self.history.clear()
+            # save csv and stats
+            now = pg.time.get_ticks()
+            if now - self.ds.last_save > SAVE_DELAY:
+                self.ds.last_save = now
+                self.ds.calc_stats(pg.time.get_ticks())
+                if self.save_to_csv:
+                    self.ds.save_csv()
 
             # last action before repeating the loop, let the time run!
             self.clock.tick(FPS)

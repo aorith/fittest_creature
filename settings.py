@@ -9,8 +9,19 @@ FOOD_COLOR = (50, 50, 255)
 POISON_COLOR = (255, 50, 50)
 
 SAVE_TO_CSV = False
-CSV_NAME = str(int(time())) + "_data.csv"
+STARTTIME = str(int(time()))  # used to save csv with unique name
 SAVE_DELAY = 20 * 1000  # in milliseconds
+
+HEADER1 = ["Time", "Fitness", "Age", "FEaten", "MaxVel_MaxHP", "FoodAttraction",
+           "PoisonAttraction", "FoodDistance", "PoisonDistance", "MaxSteerForce",
+           "DirAngleMult"]
+
+HEADER2 = ["Time", "MeanFitness", "MedianFitness", "MeanAge", "MedianAge",
+           "MeanFEaten", "MedianFEaten", "MeanMaxVel_MaxHP", "MedianMaxVel_MaxHP",
+           "MeanFoodAtt", "MedianFoodAtt", "MeanPoisonAtt", "MedianPoisonAtt",
+           "MeanFoodDist", "MedianFoodDist", "MeanPoisonDist", "MedianPoisonDist",
+           "MeanMaxSteerForce", "MedianMaxSteerForce", "MeanDirAngleMult",
+           "MedianDirAngleMult"]
 
 # Switches how we choose the creatures that breed, with this
 # only the creature with the record age will breed, even if it died already

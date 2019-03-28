@@ -56,4 +56,6 @@ There are a few more variables playing into this, the code has a lot of comments
 - Press **r** to turn on/off only record can breed. (current mode can be seen on status bar)
 - Press **s** to turn on/off save to csv file. (current mode can be seen on status bar).
 _This will save data in a .csv file every X seconds, regarding creatures age and DNA values, nice for plotting._
+_NEW: Now this will save two .csv files, *_history.csv will data from all dead creatures and _stats.csv with a bunch of statistics._ 
 - Press **p** to print to the console information about the current records.
+- Press **i** to print to the console statistical information.
