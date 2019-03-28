@@ -6,7 +6,7 @@ import pygame.gfxdraw
 from pygame.math import Vector2 as vec
 
 from settings import *
-from datastats import *
+from datastats import Datastats
 
 # change directory where the script is
 os.chdir(os.path.abspath(os.path.dirname(__file__)))
