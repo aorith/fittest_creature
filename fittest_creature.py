@@ -141,6 +141,7 @@ class Creature(pg.sprite.Sprite):
         self.pos = pos
         self.vel = vec(0.0, 0.0)
         self.acc = vec(0.0, 0.0)
+        self.desired = vec(0.0, 0.0)  # drawing purposes
         self.age = 0
         self.eaten = 0
         self.childs = 0
@@ -183,10 +184,11 @@ class Creature(pg.sprite.Sprite):
         return None
 
     def seek(self, target):
-        desired = (target - self.pos)
+        desired = target - self.pos
         if desired.length() > 0.001:
             desired = desired.normalize() * self.max_vel
-        steer = (desired - self.vel)
+        self.desired = desired
+        steer = desired - self.vel
         if steer.length() > self.max_steer_force:
             steer.scale_to_length(self.max_steer_force)
         return steer
@@ -209,8 +211,8 @@ class Creature(pg.sprite.Sprite):
         self.apply_force(self.seek(target))
 
     def seek_targets(self, targets):
-        # we start with a steer of 0 length
-        steer = vec(0.0, 0.0)
+        # we start with a force of 0 length
+        desired = vec(0.0, 0.0)
 
         # create a dict with all the targets in range
         targets_inrange = {}
@@ -226,14 +228,16 @@ class Creature(pg.sprite.Sprite):
         if targets_inrange:
             min_dist = min(targets_inrange.values())
             for t, dist in targets_inrange.items():
-                # get the steer force for the current target
-                steer_force = (self.seek(t.pos))
+                # get the desired vector to the target pos
+                desired_force = t.pos - self.pos
+                # normalize it if possible
+                if desired_force.length() > 0.001:
+                    desired_force.scale_to_length(self.max_vel)
 
                 # calculate the difference in angle between
                 # the target and our velocity, less difference will have
                 # a priority (targets we have in front)
-                dir_to_target = (t.pos - self.pos)
-                _, angle_d = dir_to_target.as_polar()
+                _, angle_d = desired_force.as_polar()
                 _, angle = self.vel.as_polar()
                 angle_diff = abs(angle - angle_d)
 
@@ -242,21 +246,28 @@ class Creature(pg.sprite.Sprite):
                     min_dist_mult = 2
 
                 if t.is_poison:
-                    steer_force *= self.poison_attraction * min_dist_mult
+                    desired_force *= self.poison_attraction * min_dist_mult
                 else:
-                    steer_force *= self.food_attraction * min_dist_mult
+                    desired_force *= self.food_attraction * min_dist_mult
 
-                # adjust steer with distance and dir angle
+                # adjust vector with distance and dir angle
                 # the higher dir_angle_mult a creature has, the higher priority
                 # targets in front of it will have (i'm proud of this ^^)
-                steer_force /= (1 + dist +
-                                sqrt(angle_diff * self.dir_angle_mult))
+                desired_force /= (1 + dist +
+                                  sqrt(angle_diff * self.dir_angle_mult))
 
-                # sum all the steer_force
-                steer += steer_force
+                # sum all the force
+                desired += desired_force
 
-            # in case steer is too low
-            steer *= self.max_vel
+            # in case force is too low
+            desired *= self.max_vel
+            if desired.length() > self.max_vel:
+                desired.scale_to_length(self.max_vel)
+
+            self.desired = desired
+
+            # calc the steer force
+            steer = desired - self.vel
 
             if steer.length() > self.max_steer_force:
                 steer.scale_to_length(self.max_steer_force)
