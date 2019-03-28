@@ -125,7 +125,7 @@ class Creature(pg.sprite.Sprite):
             self.dna[3], 0, 1, self.radius, MAX_PERCEPTION_DIST)
         self.poison_dist = translate(
             self.dna[4], 0, 1, self.radius, MAX_PERCEPTION_DIST)
-        self.max_steer_force = translate(self.dna[5], 0, 1, 0, MAX_STEER_FORCE)
+        self.max_steer_force = translate(self.dna[5], 0, 1, 1, MAX_STEER_FORCE)
         self.dir_angle_mult = translate(
             self.dna[6], 0, 1, MIN_DIR_ANGLE_MULT, MAX_DIR_ANGLE_MULT)
 
@@ -327,25 +327,34 @@ class Creature(pg.sprite.Sprite):
         # update rect position
         self.rect = self.image.get_rect(center=self.rect.center)
 
-    def draw_vectors(self, screen):
+    def draw_vectors(self, screen, options):
         scale = 2
 
-        # food distance
-        pg.draw.circle(screen, FOOD_COLOR,
-                       (int(self.pos.x), int(self.pos.y)), int(self.food_dist), 1)
-        # poison distance
-        pg.draw.circle(screen, POISON_COLOR,
-                       (int(self.pos.x), int(self.pos.y)), int(self.poison_dist), 1)
+        if options[0]:
+            # food distance
+            pg.draw.circle(screen, FOOD_COLOR,
+                           (int(self.pos.x), int(self.pos.y)), int(self.food_dist), 1)
+            # poison distance
+            pg.draw.circle(screen, POISON_COLOR,
+                           (int(self.pos.x), int(self.pos.y)), int(self.poison_dist), 1)
 
-        # food / poison attraction
-        if self.vel.length():
-            direction = self.vel.normalize()
-        else:
-            direction = self.vel
-        pg.draw.line(screen, FOOD_COLOR, self.pos,
-                     (self.pos + (direction * self.food_attraction) * scale), 2)
-        pg.draw.line(screen, POISON_COLOR, self.pos,
-                     (self.pos + (direction * self.poison_attraction) * scale), 2)
+            # food / poison attraction
+            if self.vel.length():
+                direction = self.vel.normalize()
+            else:
+                direction = self.vel
+            pg.draw.line(screen, FOOD_COLOR, self.pos,
+                         (self.pos + (direction * self.food_attraction) * scale), 2)
+            pg.draw.line(screen, POISON_COLOR, self.pos,
+                         (self.pos + (direction * self.poison_attraction) * scale), 2)
+
+        if options[1]:
+            # vel
+            pg.draw.line(screen, (244, 238, 66), self.pos,
+                         (self.pos + self.vel), 4)
+            # desired
+            pg.draw.line(screen, pg.Color('orange'), self.pos,
+                         (self.pos + self.desired), 4)
 
 
 class Food(pg.sprite.Sprite):
@@ -413,7 +422,9 @@ class Game:
         pg.init()
         self.running = True
 
-        self.draw_vectors = False
+        self.draw_vectors = []
+        self.draw_vectors.append(False)
+        self.draw_vectors.append(False)
         self.only_record_breeds = ONLY_RECORD_BREEDS
         self.save_to_csv = SAVE_TO_CSV
 
@@ -450,7 +461,9 @@ class Game:
                 if event.key == pg.K_ESCAPE:
                     self.running = False
                 elif event.key == pg.K_v:
-                    self.draw_vectors = not self.draw_vectors
+                    self.draw_vectors[0] = not self.draw_vectors[0]
+                elif event.key == pg.K_n:
+                    self.draw_vectors[1] = not self.draw_vectors[1]
                 elif event.key == pg.K_r:
                     self.only_record_breeds = not self.only_record_breeds
                 elif event.key == pg.K_s:
@@ -628,9 +641,9 @@ class Game:
 
             self.all_sprites.draw(self.screen)
 
-            if self.draw_vectors:
+            if max(self.draw_vectors):
                 for c in self.all_creatures:
-                    c.draw_vectors(self.screen)
+                    c.draw_vectors(self.screen, self.draw_vectors)
 
             self.check_record()
 
