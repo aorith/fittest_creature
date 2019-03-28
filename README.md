@@ -52,6 +52,7 @@ There are a few more variables playing into this, the code has a lot of comments
 ### Misc
 
 - Press **v** to turn on/off a visual representation of food/poison properties of the creatures.
+- Press **n** to turn on/off a visual representation of desired and vel vectors of the creatures.
 - Press **r** to turn on/off only record can breed. (current mode can be seen on status bar)
 - Press **s** to turn on/off save to csv file. (current mode can be seen on status bar).
 _This will save data in a .csv file every X seconds, regarding creatures age and DNA values, nice for plotting._
