@@ -11,7 +11,7 @@ This is more of a remainder for myself if I forget how does it work in the futur
 
 ## Details
 
-The **fittest_ship.py** script was just me learning pygame and experimenting with genetic algorithms.
+The **old_version/fittest_ship.py** script was just me learning pygame and experimenting with genetic algorithms.
 
 
 In **fittest_creature.py** the spawned creatures try to survive, the longer they live the more childs they will have.
@@ -19,7 +19,7 @@ In **fittest_creature.py** the spawned creatures try to survive, the longer they
 All the creatures have a variable that stores its DNA in the form of an array, each item in the array corresponds to a number from 0 to 1 and is linked to a property or a "phenotype" of the creature.
 
 
-The environment is simple, there is good food, and poison, if a creature eats food it will gain health, if it eats poison it will lose some. The values can be changed in the configuration variables at the top of the script.
+The environment is simple, there is good food, and poison, if a creature eats food it will gain health, if it eats poison it will lose some. The values can be changed in the configuration variables in settings.py.
 
 Creatures spawn with random DNA values, here is an example:
 
