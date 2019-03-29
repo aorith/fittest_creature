@@ -24,9 +24,8 @@ for header in HEADER1:
         HEADER2.append('Mean' + header)
         HEADER2.append('Median' + header)
 
-# Switches how we choose the creatures that breed, with this
-# only the creature with the record age will breed, even if it died already
-ONLY_RECORD_BREEDS = False
+# Switches spawn mode, between Continuous: False, and By Gen: True
+SPAWN_MODE = False
 
 TOTAL_CREATURES = 10
 MIN_CREATURE_SIZE = 7

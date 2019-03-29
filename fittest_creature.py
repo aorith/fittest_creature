@@ -108,10 +108,16 @@ class Creature(pg.sprite.Sprite):
                 print(f"{dna[i]}")
         return dna
 
-    def breed(self):
+    def breed(self, forced_chance=None):
         # higher fitness = higher chance to breed
         x = self.fitness()
-        if random() < (x / (BREED_CHANCE_VALUE + x)):
+        chance = (x / (BREED_CHANCE_VALUE + x))
+
+        # used in By Gen mode:
+        if forced_chance is not None:
+            chance = forced_chance
+
+        if random() < chance:
             return self.mutate(self.dna.copy())
         return None
 
@@ -344,8 +350,8 @@ class Game:
         self.running = True
 
         self.draw_vectors = [False, False]
-        self.only_record_breeds = ONLY_RECORD_BREEDS
         self.save_to_csv = SAVE_TO_CSV
+        self.spawn_mode = SPAWN_MODE  # False: Continuous, True: ByGen
 
         # for storing data and statistics about the game
         self.ds = Datastats()
@@ -370,8 +376,11 @@ class Game:
                     self.draw_vectors[0] = not self.draw_vectors[0]
                 elif event.key == pg.K_n:
                     self.draw_vectors[1] = not self.draw_vectors[1]
-                elif event.key == pg.K_r:
-                    self.only_record_breeds = not self.only_record_breeds
+                elif event.key == pg.K_w:
+                    self.spawn_mode = not self.spawn_mode
+                    if self.spawn_mode:
+                        # if mode is now ByGen, clear dict
+                        self.ds.temp_hist_by_gen.clear()
                 elif event.key == pg.K_s:
                     self.save_to_csv = not self.save_to_csv
                 elif event.key == pg.K_i:
@@ -423,7 +432,7 @@ class Game:
                                      int(current_record.pos.y),
                                      current_record.radius // 4, pg.Color('black'))
 
-    def spawn_creatures(self):
+    def spawn_creatures_continuous(self):
         # spawn a new creature or try to breed existing one
         # we always try to spawn a full set of creatures if there are 0
         loops = 1
@@ -442,9 +451,8 @@ class Game:
         else:
             # we can breed if all_creatures is not empty and we still have room
             if len(self.all_creatures) < TOTAL_CREATURES and self.all_creatures:
-                # we pick one random sprite as a parent and try to breed it
-                parent = self.ds.fittest if self.only_record_breeds else choice(
-                    self.all_creatures.sprites())
+                # we pick one random creature as a parent and try to breed it
+                parent = choice(self.all_creatures.sprites())
                 dna = parent.breed()
                 if dna is not None:
                     # breed was successful, see if it's lucky to find a valid position to spawn
@@ -457,6 +465,52 @@ class Game:
                         self.all_sprites.add(child)
                         parent.childs += 1  # the parent, augments its childs counter
                         child.gen += 1 + parent.gen  # update the childs gen by 1 + parents gen
+
+    def spawn_creatures_by_gen(self):
+        """ spawn a new generation when all creatures die """
+        if not self.all_creatures:
+            # only spawn when there are 0 creatures alive
+            if self.ds.temp_hist_by_gen:
+                # we have an old generation, spawn a new one
+                # using dna from old gen, fittest ones have
+                # greater chance to spawn childs
+
+                # fistly, calculate the chance to breed of each creature
+                # according to its fitness and the fitness of others
+                self.ds.calc_fitness_by_gen()
+                info = choice(list(self.ds.temp_hist_by_gen.keys()))
+                print(f"\n~~~~~~~~~ GEN: {info.gen + 1} ~~~~~~~~~")
+                # now we breed by that chance until max population
+                while len(self.all_creatures) < TOTAL_CREATURES:
+                    # we pick one random creature as a parent and try to breed it
+                    parent = choice(list(self.ds.temp_hist_by_gen.keys()))
+                    chance = self.ds.temp_hist_by_gen[parent]
+                    dna = parent.breed(forced_chance=chance)
+                    if dna is not None:
+                        # breed was successful, see if it's lucky to find a valid position to spawn
+                        newpos = vec(randint(0, WIN_WIDTH),
+                                     randint(0, WIN_HEIGHT))
+                        if valid_pos(newpos, self.poison_group):
+                            # got a valid position, create a new creature there with dna as heritage
+                            child = Creature(newpos, dna)
+                            self.all_creatures.add(child)
+                            self.all_sprites.add(child)
+                            parent.childs += 1  # the parent, augments its childs counter
+                            child.gen += 1 + parent.gen  # update the childs gen by 1 + parents gen
+                            print(
+                                f"[{pg.time.get_ticks()}] [{id(parent)}] breeds with a chance of: {chance}.")
+                # clear old generation
+                self.ds.temp_hist_by_gen.clear()
+                print("~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+            else:
+                # we don't have data from old gen, spawn new creatures
+                while len(self.all_creatures) < TOTAL_CREATURES:
+                    newpos = vec(randint(0, WIN_WIDTH),
+                                 randint(0, WIN_HEIGHT))
+                    if valid_pos(newpos, self.poison_group):
+                        newcreature = Creature(newpos)
+                        self.all_creatures.add(newcreature)
+                        self.all_sprites.add(newcreature)
 
     def spawn_foods(self):
         # spawn poison
@@ -481,8 +535,11 @@ class Game:
             # get delta time in seconds (default is miliseconds)
             dt = self.clock.get_time() / 1000
 
-            # spawn/breed, we check poison group just to ensure that none spawns eating poison
-            self.spawn_creatures()
+            # spawn creatures according to selected mode
+            if self.spawn_mode:
+                self.spawn_creatures_by_gen()
+            else:
+                self.spawn_creatures_continuous()
             # food/poison, we check all the sprites not to spawn food on top of anything
             self.spawn_foods()
 
@@ -512,15 +569,18 @@ class Game:
             pg.display.flip()
 
             if self.ds.fittest is not None:
-                csv_out = ""
+                spawn_mode_txt = "Continuous"
+                if self.spawn_mode:
+                    spawn_mode_txt = "By Gen"
+                csv_out_txt = ""
                 if self.save_to_csv:
-                    csv_out = f"(Saving CSVs to: \"{STARTTIME}_*.csv\")"
+                    csv_out_txt = f"(Saving CSVs to: \"{STARTTIME}_*.csv\")"
                 pg.display.set_caption(
                     "Fittest Creature (Fps: {:.2f}) ".format(self.clock.get_fps()) +
                     f"(Running: {int(pg.time.get_ticks() / 1000)} seconds) (Alive: {len(self.all_creatures)}) " +
                     f"(Record: {int(self.ds.age_record)} secons) " +
                     "(Record fitness: {:.2f}) ".format(self.ds.fittest.fitness()) +
-                    f"(Only record breeds: {str(self.only_record_breeds)}) {csv_out}")
+                    f"(Spawn Mode: {spawn_mode_txt}) {csv_out_txt}")
 
             # save csv and stats
             now = pg.time.get_ticks()

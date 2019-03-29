@@ -39,6 +39,10 @@ class Datastats:
         self.fitness_record = 0
         self.age_record = 0
 
+        # stores creatures and its fitness value from 0 to 1 compared
+        # to the other creatures of the same generation, used in ByGen mode
+        self.temp_hist_by_gen = {}
+
         self.temp_history = []
         self.history = []
         self.temp_stats_history = []
@@ -63,6 +67,7 @@ class Datastats:
             row.append(c.dna[i])
         self.temp_history.append(row)
         self.history.append(row)
+        self.temp_hist_by_gen[c] = 0  # for By Gen mode
 
     def save_csv(self):
         with open(self.csv_name1, mode='a', newline='') as data_file:
@@ -85,6 +90,17 @@ class Datastats:
             for line in self.temp_stats_history:
                 data_writer.writerow(line)
         self.temp_stats_history.clear()
+
+    def calc_fitness_by_gen(self):
+        """ gives each creatures in the dict a chance being it higher
+        the higher fitness that creatures has """
+        f_sum = 0
+        # first loop gives us the sum of the fitness
+        for c, _ in self.temp_hist_by_gen.items():
+            f_sum += c.fitness()
+        # now we calc the chances by fitness of each one
+        for c, _ in self.temp_hist_by_gen.items():
+            self.temp_hist_by_gen[c] = c.fitness() / f_sum
 
     def calc_stats(self, timestamp):
         if self.history:
