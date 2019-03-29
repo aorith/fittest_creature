@@ -12,16 +12,17 @@ SAVE_TO_CSV = False
 STARTTIME = str(int(time()))  # used to save csv with unique name
 SAVE_DELAY = 20 * 1000  # in milliseconds
 
-HEADER1 = ["Time", "Fitness", "Age", "FEaten", "MaxVel_MaxHP", "FoodAttraction",
+HEADER1 = ["Time", "Fitness", "Age", "FEaten", "Gen", "Childs", "MaxVel_MaxHP", "FoodAttraction",
            "PoisonAttraction", "FoodDistance", "PoisonDistance", "MaxSteerForce",
            "DirAngleMult"]
 
-HEADER2 = ["Time", "MeanFitness", "MedianFitness", "MeanAge", "MedianAge",
-           "MeanFEaten", "MedianFEaten", "MeanMaxVel_MaxHP", "MedianMaxVel_MaxHP",
-           "MeanFoodAtt", "MedianFoodAtt", "MeanPoisonAtt", "MedianPoisonAtt",
-           "MeanFoodDist", "MedianFoodDist", "MeanPoisonDist", "MedianPoisonDist",
-           "MeanMaxSteerForce", "MedianMaxSteerForce", "MeanDirAngleMult",
-           "MedianDirAngleMult"]
+HEADER2 = []
+for header in HEADER1:
+    if header == "Time":
+        HEADER2.append(header)
+    else:
+        HEADER2.append('Mean' + header)
+        HEADER2.append('Median' + header)
 
 # Switches how we choose the creatures that breed, with this
 # only the creature with the record age will breed, even if it died already

@@ -476,17 +476,6 @@ class Game:
                 self.food_group.add(f)
                 self.all_sprites.add(f)
 
-    def append_to_hist(self, creature):
-        row = []
-        row.append(pg.time.get_ticks())
-        row.append(creature.fitness())
-        row.append(creature.age)
-        row.append(creature.eaten)
-        for i in range(DNA_SIZE):
-            row.append(creature.dna[i])
-        self.ds.temp_history.append(row)
-        self.ds.history.append(row)
-
     def game_loop(self):
         while self.running:
             # get delta time in seconds (default is miliseconds)
@@ -504,7 +493,7 @@ class Game:
             # check if any creature died
             for creature in self.all_creatures:
                 if creature.is_dead():
-                    self.append_to_hist(creature)
+                    self.ds.append_to_hist(creature, pg.time.get_ticks())
                     creature.kill()
                     del creature
 

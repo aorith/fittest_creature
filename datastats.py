@@ -1,6 +1,6 @@
 import csv
 from statistics import mean, median
-from settings import STARTTIME, HEADER1, HEADER2
+from settings import STARTTIME, HEADER1, HEADER2, DNA_SIZE
 
 
 def isfloat(value):
@@ -55,6 +55,15 @@ class Datastats:
         self.means = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.medians = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
+    def append_to_hist(self, c, timestamp):
+        row = [timestamp, c.fitness(), c.age, c.eaten,
+               c.gen, c.childs]
+
+        for i in range(DNA_SIZE):
+            row.append(c.dna[i])
+        self.temp_history.append(row)
+        self.history.append(row)
+
     def save_csv(self):
         with open(self.csv_name1, mode='a', newline='') as data_file:
             data_writer = csv.writer(
@@ -99,6 +108,7 @@ class Datastats:
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         for i in range(len(self.means)):
             if i == 0:
+                # skip Time
                 continue
             print(f"Mean {HEADER1[i]}:\t{self.means[i-1]}")
             print(f"Median {HEADER1[i]}:\t{self.medians[i-1]}")
