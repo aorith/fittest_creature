@@ -19,8 +19,8 @@ def column(matrix, i):
 
 def print_info(c, timestamp):
     """ print creature info on console """
-    print(f"\n[{timestamp}] [{id(c)}] [Fitness: {c.fitness()}] Age: {c.age} seconds." +
-          f" F.Eaten: {c.eaten}\n" +
+    print(f"\n[{timestamp}] [{id(c)}] [Fitness: {c.fitness()}]\n " +
+          f"Age: {c.age} seconds, F.Eaten: {c.food_eaten}, P.Eaten: {c.poison_eaten}\n" +
           f"currHP: {c.health}, Gen: {c.gen}, Childs: {c.childs}\n" +
           f"DNA: {c.dna}\n" +
           f"FoodAttr: {c.food_attraction}, PoisonAttr: {c.poison_attraction}\n" +
@@ -58,8 +58,8 @@ class Datastats:
         self.medians = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     def append_to_hist(self, c, timestamp):
-        row = [timestamp, c.fitness(), c.age, c.eaten,
-               c.gen, c.childs]
+        row = [timestamp, c.fitness(), c.age, c.food_eaten,
+               c.poison_eaten, c.gen, c.childs]
 
         for i in range(DNA_SIZE):
             row.append(c.dna[i])

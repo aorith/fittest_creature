@@ -75,7 +75,8 @@ class Creature(pg.sprite.Sprite):
         self.acc = vec(0.0, 0.0)
         self.desired = vec(0.0, 0.0)  # drawing purposes
         self.age = 0
-        self.eaten = 0
+        self.food_eaten = 0
+        self.poison_eaten = 0
         self.childs = 0
         self.gen = 0
 
@@ -86,7 +87,7 @@ class Creature(pg.sprite.Sprite):
 
     def fitness(self):
         """ returns fitness value of this creature """
-        return sqrt(self.age + self.eaten * 2)
+        return sqrt(max(self.age + (self.food_eaten * 2) - self.poison_eaten, 0))
 
     def mutate(self, dna):
         """ returns a mutated (or not) copy of its own dna """
@@ -221,9 +222,10 @@ class Creature(pg.sprite.Sprite):
     def eat(self, is_poison):
         if is_poison:
             self.health += POISON_VALUE
+            self.poison_eaten += 1
         else:
             self.health += FOOD_VALUE
-            self.eaten += 1
+            self.food_eaten += 1
         self.health = max(0, min(self.health, self.max_health))
 
     def update(self, dt, targets):

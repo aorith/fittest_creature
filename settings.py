@@ -12,9 +12,9 @@ SAVE_TO_CSV = False
 STARTTIME = str(int(time()))  # used to save csv with unique name
 SAVE_DELAY = 20 * 1000  # in milliseconds
 
-HEADER1 = ["Time", "Fitness", "Age", "FEaten", "Gen", "Childs", "MaxVel_MaxHP", "FoodAttraction",
-           "PoisonAttraction", "FoodDistance", "PoisonDistance", "MaxSteerForce",
-           "DirAngleMult"]
+HEADER1 = ["Time", "Fitness", "Age", "FoodEaten", "PoisonEaten", "Gen",
+           "Childs", "MaxVel_MaxHP", "FoodAttraction", "PoisonAttraction",
+           "FoodDistance", "PoisonDistance", "MaxSteerForce", "DirAngleMult"]
 
 HEADER2 = []
 for header in HEADER1:
