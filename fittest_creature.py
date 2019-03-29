@@ -479,6 +479,22 @@ class Game:
                 # according to its fitness and the fitness of others
                 self.ds.calc_fitness_by_gen()
                 info = choice(list(self.ds.temp_hist_by_gen.keys()))
+
+                # here we try to spawn one new creature to add variation
+                # this disrupts generation counter as this creature will
+                # have gen = 0, but I don't like the idea of setting it
+                # to have the current gen as its unreal
+                chance = 1
+                if self.ds.means[0]:
+                    chance = min(4 / self.ds.means[0], 0.9)
+                if random() < chance:
+                    newpos = vec(randint(0, WIN_WIDTH),
+                                randint(0, WIN_HEIGHT))
+                    if valid_pos(newpos, self.poison_group):
+                        newcreature = Creature(newpos)
+                        self.all_creatures.add(newcreature)
+                        self.all_sprites.add(newcreature)
+
                 print(f"\n~~~~~~~~~ GEN: {info.gen + 1} ~~~~~~~~~")
                 # now we breed by that chance until max population
                 while len(self.all_creatures) < TOTAL_CREATURES:

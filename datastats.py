@@ -53,9 +53,7 @@ class Datastats:
         self.csv_name1 = STARTTIME + "_history.csv"
         self.csv_name2 = STARTTIME + "_stats.csv"
 
-        # 0: fitness,   1: age,        2: f.eaten, 3: MaxVel_MaxHP
-        # 4: FAttr,     5: PAttr,      6: FDist,   7: PDist
-        # 8: MaxSteerF, 9: DirAngMult
+        # see HEADER1 & 2 for order (excluding time)
         self.means = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.medians = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
