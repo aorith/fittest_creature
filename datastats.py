@@ -37,7 +37,7 @@ class Datastats:
         self.current_fittest = None
         self.oldest = None
         self.fitness_record = 0
-        self.age_record = 0
+        self.oldest_age = 0
 
         # stores creatures and its fitness value from 0 to 1 compared
         # to the other creatures of the same generation, used in ByGen mode
@@ -54,12 +54,12 @@ class Datastats:
         self.csv_name2 = STARTTIME + "_stats.csv"
 
         # see HEADER1 & 2 for order (excluding time)
-        self.means = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        self.medians = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        self.means = [0 for _ in range(len(HEADER1) - 1)]
+        self.medians = [0 for _ in range(len(HEADER1) - 1)]
 
     def append_to_hist(self, c, timestamp):
-        row = [timestamp, c.fitness(), c.age, c.food_eaten,
-               c.poison_eaten, c.gen, c.childs]
+        row = [timestamp, c.fitness(), c.age, c.gen, c.childs,
+               c.food_eaten, c.poison_eaten]
 
         for i in range(DNA_SIZE):
             row.append(c.dna[i])

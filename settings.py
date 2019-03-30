@@ -12,8 +12,8 @@ SAVE_TO_CSV = False
 STARTTIME = str(int(time()))  # used to save csv with unique name
 SAVE_DELAY = 20 * 1000  # in milliseconds
 
-HEADER1 = ["Time", "Fitness", "Age", "FoodEaten", "PoisonEaten", "Gen",
-           "Childs", "MaxVel_MaxHP", "FoodAttraction", "PoisonAttraction",
+HEADER1 = ["Time", "Fitness", "Age", "Gen", "Childs", "FoodEaten", "PoisonEaten",
+           "MaxVel_MaxHP", "FoodAttraction", "PoisonAttraction",
            "FoodDistance", "PoisonDistance", "MaxSteerForce", "DirAngleMult"]
 
 HEADER2 = []
@@ -27,7 +27,7 @@ for header in HEADER1:
 # Switches spawn mode, between Continuous: False, and By Gen: True
 SPAWN_MODE = False
 
-TOTAL_CREATURES = 10
+TOTAL_CREATURES = 15
 MIN_CREATURE_SIZE = 7
 MAX_CREATURE_SIZE = 53
 

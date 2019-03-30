@@ -412,7 +412,7 @@ class Game:
         for c in self.all_creatures:
             # record of all times:
             if c.fitness() > self.ds.fitness_record:
-                self.ds.age_record = c.age
+                self.ds.oldest_age = c.age
                 self.ds.fitness_record = c.fitness()
                 if self.ds.fittest is not None and c is not self.ds.fittest:
                     print("\n---------------------- New Record --------------------")
@@ -596,7 +596,7 @@ class Game:
                 pg.display.set_caption(
                     "Fittest Creature (Fps: {:.2f}) ".format(self.clock.get_fps()) +
                     f"(Running: {int(pg.time.get_ticks() / 1000)} seconds) (Alive: {len(self.all_creatures)}) " +
-                    f"(Record: {int(self.ds.age_record)} secons) " +
+                    f"(Record: {int(self.ds.oldest_age)} secons) " +
                     "(Record fitness: {:.2f}) ".format(self.ds.fittest.fitness()) +
                     f"(Spawn Mode: {spawn_mode_txt}) {csv_out_txt}")
 
