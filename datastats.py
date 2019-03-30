@@ -120,7 +120,7 @@ class Datastats:
 
     def print_stats(self):
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-        for i in range(len(self.means)):
+        for i in range(len(HEADER1)):
             if i == 0:
                 # skip Time
                 continue
