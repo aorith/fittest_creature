@@ -65,7 +65,6 @@ class Datastats:
             row.append(c.dna[i])
         self.temp_history.append(row)
         self.history.append(row)
-        self.temp_hist_by_gen[c] = 0  # for By Gen mode
 
     def save_csv(self):
         with open(self.csv_name1, mode='a', newline='') as data_file:

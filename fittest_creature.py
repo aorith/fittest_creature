@@ -517,6 +517,11 @@ class Game:
                             child.gen += 1 + parent.gen  # update the childs gen by 1 + parents gen
                             print(
                                 f"[{pg.time.get_ticks()}] [{id(parent)}] breeds with a chance of: {chance}.")
+                # append to hist old generation
+                for creature, _ in self.ds.temp_hist_by_gen.items():
+                        self.ds.append_to_hist(creature, pg.time.get_ticks())
+                        creature.kill()
+                        del creature
                 # clear old generation
                 self.ds.temp_hist_by_gen.clear()
                 print("~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -568,7 +573,13 @@ class Game:
             # check if any creature died
             for creature in self.all_creatures:
                 if creature.is_dead():
-                    self.ds.append_to_hist(creature, pg.time.get_ticks())
+                    if self.spawn_mode:
+                        # if we are in ByGen mode, we will append to hist later
+                        self.ds.temp_hist_by_gen[creature] = 0  # set fitness for By Gen mode
+                    else:
+                        # append to hist
+                        self.ds.append_to_hist(creature, pg.time.get_ticks())
+                    # kill the poor creature
                     creature.kill()
                     del creature
 
