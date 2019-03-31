@@ -32,9 +32,9 @@ MIN_CREATURE_SIZE = 7
 MAX_CREATURE_SIZE = 53
 
 # chance to spawn a new creature to add variation to the simulation
-# if this fails an existing creature will try to breed
+# each frame. Only for continuous mode
 # keep it low to favor breeding
-# if 0 creatures are alive, then spawn_creatures function will spawn in bulk
+# if 0 creatures are alive, they spawn in bulk
 NEW_CREATURE_CHANCE = 0.003
 
 DNA_SIZE = 7  # number of values in the dna.
