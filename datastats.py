@@ -1,5 +1,5 @@
 import csv
-from statistics import mean, median
+import numpy as np
 from settings import STARTTIME, HEADER1, HEADER2, DNA_SIZE
 
 
@@ -44,9 +44,9 @@ class Datastats:
         self.temp_hist_by_gen = {}
 
         self.temp_history = []
-        self.history = []
+        self.history = ([])  # will be np.array
         self.temp_stats_history = []
-        self.stats_history = []
+        self.stats_history = ([])  # will be np.array
         self.last_save = 0
         self.header_saved = [False, False]
 
@@ -64,7 +64,13 @@ class Datastats:
         for i in range(DNA_SIZE):
             row.append(c.dna[i])
         self.temp_history.append(row)
-        self.history.append(row)
+        # using numpy for history
+        row = np.array(row)
+        # if history is still a list, it's empty
+        if isinstance(self.history, list):
+            self.history = row
+        else:
+            self.history = np.vstack((self.history, row))
 
     def save_csv(self):
         with open(self.csv_name1, mode='a', newline='') as data_file:
@@ -100,17 +106,27 @@ class Datastats:
             self.temp_hist_by_gen[c] = c.fitness() / f_sum
 
     def calc_stats(self, timestamp):
-        if self.history:
+        # we have data if history is already an np.array
+        if isinstance(self.history, np.ndarray):
             row = []
             row.append(timestamp)
             for i in range(len(self.means)):
-                self.means[i] = mean(column(self.history, i+1))
-                self.medians[i] = median(column(self.history, i+1))
+
+                # Slower:
+                # self.means[i] = np.mean(column(self.history, i+1))
+                # self.medians[i] = np.median(column(self.history, i+1))
+
+                self.means[i] = np.mean(self.history[:, i+1])
+                self.medians[i] = np.median(self.history[:, i+1])
                 row.append(self.means[i])
                 row.append(self.medians[i])
 
             self.temp_stats_history.append(row)
-            self.stats_history.append(row)
+            row = np.array(row)
+            if isinstance(self.stats_history, np.ndarray):
+                np.vstack((self.stats_history, row))
+            else:
+                self.stats_history = row
 
         print("~~~~~~~~~~")
         print(f"Mean Fitness:\t{self.means[0]}")
