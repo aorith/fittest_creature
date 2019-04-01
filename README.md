@@ -64,7 +64,6 @@ There are a few more variables in play, the code has a lot of comments and pytho
 - Press **n** to turn on/off a visual representation of desired and vel vectors of the creatures.
 - Press **w** switches spawn mode, between Continuous and By Gen, current status is shown in window title.w
 - Press **s** to turn on/off save to csv file. (current mode can be seen on status bar).
-
-_This will save two .csv files, *history.csv with data from all dead creatures and *stats.csv with a bunch of statistics._ 
+ This will save two .csv files, *history.csv with data from all dead creatures and *stats.csv with a bunch of statistics.
 - Press **p** to print to the console information about the current records.
 - Press **i** to print to the console statistical information.
