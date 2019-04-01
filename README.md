@@ -50,7 +50,7 @@ Creatures have a fitness function that takes into account its age, food eaten an
 The breed function of the creature returns a mutated version of its own DNA, there is a chance to mutate each property, and a total amount that property can mutate which **decreases** as the creature has more fitness.
 So, the less fitness a creature has, the higher a property can mutate, that way when we have a bad population (bad = low fitness) creatures will mutate more.
 
-There are two modes that can be toggle pressing **w**:
+There are two modes that can be toggled by pressing **w**:
 - Continuous: Creatures have a chance to breed while they're alive, based on its fitness of course, if all of them die a new set of creatures will spawn, the idea is that when some good creatures are in play they will keep breeding and so will their childs.
 - By Gen: We spawn a full set of creatures, let them play and when all die the fittest have a greater chance to breed the next generation, but all of them have a chance.
 
