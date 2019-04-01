@@ -35,8 +35,8 @@ Here, dna[1] is mapped to Food attraction, which in this example has a minimum o
 The rest of the properties work in the same way, with the exception of dna[0] which is mapped to three properties, max health, max velocity and size, I think that the bigger a creature is, the slower it is, and the more health it has.
 
 So for example:
-dna[0] == 0.8  --> Bigger creature, big health pool, Low max velocity
-dna[0] == 0.2  --> Smaller creatures, small health pool, high max velocity
+- dna[0] == 0.8  --> Bigger creature, big health pool, Low max velocity
+- dna[0] == 0.2  --> Smaller creatures, small health pool, high max velocity
 
 That's with the hope that the smaller ones catch more food and are able to sustain the health degeneration, but with the current settings I find that the creatures with high fitness have a somewhat big size.
 
