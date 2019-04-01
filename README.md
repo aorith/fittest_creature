@@ -53,6 +53,7 @@ So, the less fitness a creature has, the higher a property can mutate, that way 
 There are two modes that can be toggle pressing **w**:
 - Continuous: Creatures have a chance to breed while they're alive, based on its fitness of course, if all of them die a new set of creatures will spawn, the idea is that when some good creatures are in play they will keep breeding and so will their childs.
 - By Gen: We spawn a full set of creatures, let them play and when all die the fittest have a greater chance to breed the next generation, but all of them have a chance.
+
 _NOTE: in both modes variation is added with a chance to spawn a completely new creature_
 
 There are a few more variables in play, the code has a lot of comments and python it self is pretty undertandable =)
@@ -63,6 +64,7 @@ There are a few more variables in play, the code has a lot of comments and pytho
 - Press **n** to turn on/off a visual representation of desired and vel vectors of the creatures.
 - Press **w** switches spawn mode, between Continuous and By Gen, current status is shown in window title.w
 - Press **s** to turn on/off save to csv file. (current mode can be seen on status bar).
-_This will save two .csv files, *_history.csv with data from all dead creatures and _stats.csv with a bunch of statistics._ 
+
+_This will save two .csv files, *history.csv with data from all dead creatures and *stats.csv with a bunch of statistics._ 
 - Press **p** to print to the console information about the current records.
 - Press **i** to print to the console statistical information.
