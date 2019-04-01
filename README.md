@@ -1,11 +1,11 @@
-# fittest_ship
+# fittest_creature
 Evolutionary Genetic Algorithm for Steering Behaviours written in python with pygame
 
 ## Disclaimer
 
 Firstly thanks to Daniel Shiffman for the idea, the nature of code, and his awesome videos.
 
-If someone reads this know that you're welcome to point code mistakes (there will be) :)
+If someone reads this know that you're welcome to point code mistakes (there will be!!) :)
 
 This is more of a remainder for myself if I forget how does it work in the future, but I hope it helps anyone interested in python and genetic algorithms.
 
@@ -13,13 +13,13 @@ This is more of a remainder for myself if I forget how does it work in the futur
 
 The **old_version/fittest_ship.py** script was just me learning pygame and experimenting with genetic algorithms.
 
-
 In **fittest_creature.py** the spawned creatures try to survive, the longer they live the more childs they will have.
 
-All the creatures have a variable that stores its DNA in the form of an array, each item in the array corresponds to a number from 0 to 1 and is linked to a property or a "phenotype" of the creature.
+All the creatures have an array that stores its DNA, each item in the array corresponds to a number from 0 to 1 and is linked to a property or a "phenotype" of the creature.
 
 
-The environment is simple, there is good food, and poison, if a creature eats food it will gain health, if it eats poison it will lose some. The values can be changed in the configuration variables in settings.py.
+The environment is simple, there is food, and poison (green vs red circles), if a creature eats food it will gain health, if it eats poison it will lose health. Also they lose a health amount overtime.
+The values can be changed in settings.py.
 
 Creatures spawn with random DNA values, here is an example:
 
@@ -31,31 +31,38 @@ dna[3] = 0.7463319410665977  --> FoodDist: 154.3397493919876
 dna[4] = 0.6083194845586946  --> PoisonDist: 129.497507220565
 ```
 
-As you can see above, dna[0] is mapped to three properties, max health, max velocity and size of the creature, I just thought it would make it more interesting. Code wise I just distribute points between max vel and max health, and then the more health it has the bigger it will be.
+Here, dna[1] is mapped to Food attraction, which in this example has a minimum of -20, and a maximum of 20, so 0.78 translates to 11.36.
+The rest of the properties work in the same way, with the exception of dna[0] which is mapped to three properties, max health, max velocity and size, I think that the bigger a creature is, the slower it is, and the more health it has.
 
-The creature above has some nice properties to survive, its attracted to food (positive value) and avoids poison (negative value), can see food at a range of 154 and poison at a range of 129.
+So for example:
+dna[0] == 0.8  --> Bigger creature, big health pool, Low max velocity
+dna[0] == 0.2  --> Smaller creatures, small health pool, high max velocity
+
+That's with the hope that the smaller ones catch more food and are able to sustain the health degeneration, but with the current settings I find that the creatures with high fitness have a somewhat big size.
+
+The creature above has some nice properties to survive, its attracted to food (positive value) and avoids poison (negative value), can see food at a range of 154 and poison at a range of 129 (poison distance lower than food distance is a good idea as you will see running a simulation).
 
 
 ### How does the genetic algorithm work here
 
-~~Basically, each creature has a variable called "age", which stores its age in seconds, when a creature has more than the value defined in "BREEDING_AGE" variable, it will have a chance to breed (which is higher the more age it has). That way we can establish that the age property will be the fitness value of this algorithm.~~
+Creatures have a fitness function that takes into account its age, food eaten and poison eaten, the more fitness, the more likely they are to breed.
 
-Creatures have a fitness function, calculated as sqrt(age + food eaten), the more fitness, the more likely they are to breed, and the less their dna will mutate in the child.
+The breed function of the creature returns a mutated version of its own DNA, there is a chance to mutate each property, and a total amount that property can mutate which **decreases** as the creature has more fitness.
+So, the less fitness a creature has, the higher a property can mutate, that way when we have a bad population (bad = low fitness) creatures will mutate more.
 
-The breed function of the creature returns a mutated version of its own DNA, there is a chance to mutate each property, and a total amount that property can mutate which **decrease** as the creature has more ~~age~~ fitness.
-So, the more ~~age~~ fitness a creature has, the less a property can mutate, that way when we have a bad population (bad = ~~age~~ fitness is low) creatures will mutate more.
+There are two modes that can be toggle pressing **w**:
+- Continuous: Creatures have a chance to breed while they're alive, based on its fitness of course, if all of them die a new set of creatures will spawn, the idea is that when some good creatures are in play they will keep breeding and so will their childs.
+- By Gen: We spawn a full set of creatures, let them play and when all die the fittest have a greater chance to breed the next generation, but all of them have a chance.
+_NOTE: in both modes variation is added with a chance to spawn a completely new creature_
 
-Creatures try to breed randomly each frame. We can turn on "ONLY_RECORD_BREEDS" so that only the creature that currently has "all time ~~age~~ fitness record" can breed, even if that creature is dead..
+There are a few more variables in play, the code has a lot of comments and python it self is pretty undertandable =)
 
-There are a few more variables playing into this, the code has a lot of comments explaining it, and it being written in python is pretty well readable :)
-
-### Misc
+### Hotkeys
 
 - Press **v** to turn on/off a visual representation of food/poison properties of the creatures.
 - Press **n** to turn on/off a visual representation of desired and vel vectors of the creatures.
 - Press **w** switches spawn mode, between Continuous and By Gen, current status is shown in window title.w
 - Press **s** to turn on/off save to csv file. (current mode can be seen on status bar).
-_This will save data in a .csv file every X seconds, regarding creatures age and DNA values, nice for plotting._
-_NEW: Now this will save two .csv files, *_history.csv will data from all dead creatures and _stats.csv with a bunch of statistics._ 
+_This will save two .csv files, *_history.csv with data from all dead creatures and _stats.csv with a bunch of statistics._ 
 - Press **p** to print to the console information about the current records.
 - Press **i** to print to the console statistical information.
