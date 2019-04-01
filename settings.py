@@ -2,7 +2,7 @@ from time import time
 
 ### CONFIGURATION ###
 WIN_WIDTH = 1280
-WIN_HEIGHT = 800
+WIN_HEIGHT = 860
 FPS = 30
 BACKGROUND_COLOR = (7, 7, 7)
 FOOD_COLOR = (50, 50, 255)
@@ -27,7 +27,7 @@ for header in HEADER1:
 # Switches spawn mode, between Continuous: False, and By Gen: True
 SPAWN_MODE = False
 
-TOTAL_CREATURES = 15
+TOTAL_CREATURES = 17
 MIN_CREATURE_SIZE = 7
 MAX_CREATURE_SIZE = 53
 
@@ -52,11 +52,11 @@ MUTATION_CHANCE = 0.1  # chance to mutate each property, not affected by fitness
 # biggest gaps make it look ugly and unreal...
 DISTANCE_BETWEEN_SPRITES = (MAX_CREATURE_SIZE // 2) + 1
 
-TOTAL_POISON = 69
-TOTAL_FOOD = 62
-HEALTH_DEGENERATION = 9.1  # creatures will lose hp per second
-POISON_VALUE = -41  # negative value as poison is bad!
-FOOD_VALUE = 17
+TOTAL_POISON = 76
+TOTAL_FOOD = 67
+HEALTH_DEGENERATION = 12.3  # creatures will lose hp per second
+POISON_VALUE = -52  # negative value as poison is bad!
+FOOD_VALUE = 20
 
 # Values that will vary according to DNA changes, but have a max value
 MAX_STEER_FORCE = 4
@@ -66,7 +66,7 @@ MIN_DIR_ANGLE_MULT = 1
 MAX_DIR_ANGLE_MULT = 5
 # Creatures have a constraint, they evolve choosing between maxvel and maxhealth
 # having more maxhealth means bigger size and less maxvel
-TOTAL_MAXVEL_MAXHP_POINTS = 250
+TOTAL_MAXVEL_MAXHP_POINTS = 220
 # we don't want creatures to spawn with HP values lower than this
 # very low values make no sense because they die with health degeneration too fast
 MIN_HP = 30
