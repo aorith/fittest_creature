@@ -1,6 +1,8 @@
 # fittest_creature
 Evolutionary Genetic Algorithm for Steering Behaviours written in python with pygame
 
+![](data_examples/example1.png)
+
 ## Disclaimer
 
 Firstly thanks to Daniel Shiffman for the idea, the nature of code, and his awesome videos.
