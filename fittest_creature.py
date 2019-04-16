@@ -556,7 +556,7 @@ class Game:
     def game_loop(self):
         while self.running:
             # get delta time in seconds (default is miliseconds)
-            dt = self.clock.get_time() / 1000
+            dt = self.clock.tick(FPS) / 1000.0
 
             # spawn creatures according to selected mode
             if self.spawn_mode:
@@ -619,8 +619,6 @@ class Game:
                 if self.save_to_csv:
                     self.ds.save_csv()
 
-            # last action before repeating the loop, let the time run!
-            self.clock.tick(FPS)
 
     def run(self):
         self.game_loop()
